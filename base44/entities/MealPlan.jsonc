@@ -1,0 +1,5 @@
+{
+  "name":"MealPlan","type":"object","properties":{
+    "day_index":{"type":"number"},"day_label":{"type":"string"},"shift_context":{"type":"string","enum":["day","night","rest"]},"meals":{"type":"array","items":{"type":"object","properties":{"type":{"type":"string","enum":["breakfast","lunch","dinner","snack","pre_shift","post_shift"]},"name":{"type":"string"},"calories":{"type":"number"},"protein":{"type":"number"},"carbs":{"type":"number"},"fat":{"type":"number"},"items":{"type":"array","items":{"type":"string"}}}},"total_calories":{"type":"number"},"total_protein":{"type":"number"}
+  },"required":["day_index","day_label","shift_context","meals"]
+}
