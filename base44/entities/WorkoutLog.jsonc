@@ -1,0 +1,5 @@
+{
+  "name":"WorkoutLog","type":"object","properties":{
+    "date":{"type":"string","format":"date"},"workout_plan_id":{"type":"string"},"completed":{"type":"boolean","default":false},"completed_exercises":{"type":"array","items":{"type":"string"}}
+  },"required":["date","workout_plan_id"]
+}
