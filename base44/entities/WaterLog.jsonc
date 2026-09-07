@@ -1,0 +1,3 @@
+{
+  "name":"WaterLog","type":"object","properties":{"date":{"type":"string","format":"date"},"amount_ml":{"type":"number"}},"required":["date","amount_ml"]
+}
