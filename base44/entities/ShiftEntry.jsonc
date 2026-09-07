@@ -1,0 +1,5 @@
+{
+  "name":"ShiftEntry","type":"object","properties":{
+    "date":{"type":"string","format":"date"},"shift_type":{"type":"string","enum":["day","night","rest"]},"start_time":{"type":"string"},"end_time":{"type":"string"},"notes":{"type":"string"}
+  },"required":["date","shift_type"]
+}
