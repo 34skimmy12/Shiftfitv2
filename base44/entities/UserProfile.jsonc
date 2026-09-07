@@ -1,0 +1,5 @@
+{
+  "name":"UserProfile","type":"object","properties":{
+    "full_name":{"type":"string"},"age":{"type":"number"},"sex":{"type":"string","enum":["male","female","other"]},"height_cm":{"type":"number"},"weight_kg":{"type":"number"},"goal":{"type":"string","enum":["lose","maintain","gain"]},"activity_level":{"type":"string","enum":["sedentary","light","moderate","active"]},"shift_pattern":{"type":"string","enum":["fixed_day","fixed_night","rotating"]},"work_days":{"type":"array","items":{"type":"string"}},"calorie_target":{"type":"number"},"protein_target":{"type":"number"},"carb_target":{"type":"number"},"fat_target":{"type":"number"},"water_target_ml":{"type":"number"},"step_target":{"type":"number"},"onboarding_complete":{"type":"boolean","default":false}
+  },"required":["full_name","age","sex","height_cm","weight_kg","goal","shift_pattern"]
+}
