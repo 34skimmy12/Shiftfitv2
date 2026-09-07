@@ -1,0 +1,134 @@
+import React, { useEffect, useState, useCallback } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { base44 } from "@/api/base44Client";
+import { useProfile } from "@/hooks/useProfile";
+import AppLayout from "@/components/AppLayout";
+import { todayStr, weekdayOf, shiftForWeekday, WEEKDAY_LABELS } from "@/lib/fitnessUtils";
+import { useToast } from "@/components/ui/use-toast";
+import { Zap, Settings, Plus, Droplets, Flame, Beef, Wheat, Dumbbell, Footprints, ChevronRight, TrendingUp, UtensilsCrossed, Calendar, Plug, Clock } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+const SHIFT_LABEL = { day: "DAY SHIFT", night: "NIGHT SHIFT", rest: "REST DAY" };
+
+export default function Dashboard() {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { profile, loading } = useProfile();
+  const [water, setWater] = useState(0);
+  const [steps, setSteps] = useState(0);
+  const [calories, setCalories] = useState(0);
+  const [protein, setProtein] = useState(0);
+  const [carbs, setCarbs] = useState(0);
+  const [fat, setFat] = useState(0);
+  const [todaysWorkout, setTodaysWorkout] = useState(null);
+  const [todaysMeals, setTodaysMeals] = useState(null);
+  const [busy, setBusy] = useState(false);
+
+  const today = todayStr();
+  const wdIdx = weekdayOf(today);
+
+  const load = useCallback(async () => {
+    if (!profile) return;
+    const [w, s, workouts, meals] = await Promise.all([
+      base44.entities.WaterLog.filter({ date: today }),
+      base44.entities.StepLog.filter({ date: today }),
+      base44.entities.WorkoutPlan.list(),
+      base44.entities.MealPlan.list(),
+    ]);
+    setWater(w[0]?.amount_ml || 0);
+    setSteps(s[0]?.steps || 0);
+    setTodaysWorkout(workouts.find((x) => x.day_index === wdIdx) || workouts[0]);
+    const dayMeal = meals.find((x) => x.day_index === wdIdx) || meals[0];
+    setTodaysMeals(dayMeal);
+    if (dayMeal) {
+      const consumed = dayMeal.meals.slice(0, 2);
+      setCalories(consumed.reduce((a, m) => a + m.calories, 0));
+      setProtein(consumed.reduce((a, m) => a + m.protein, 0));
+      setCarbs(consumed.reduce((a, m) => a + (m.carbs || 0), 0));
+      setFat(consumed.reduce((a, m) => a + (m.fat || 0), 0));
+    }
+  }, [profile, today, wdIdx]);
+
+  useEffect(() => { load(); }, [load]);
+
+  if (loading) return <Splash />;
+  if (!profile) return <Full><div className="flex flex-col items-center justify-center gap-4 py-24 text-center"><p className="text-muted-foreground">Let's set up your plan first.</p><button onClick={() => navigate("/onboarding")} className="rounded-xl bg-primary px-5 py-2.5 font-semibold text-primary-foreground glow-cyan">Start onboarding</button></div></Full>;
+
+  const shift = shiftForWeekday(profile, wdIdx);
+  const adjustWater = async (delta) => {
+    setBusy(true);
+    const next = Math.max(0, water + delta);
+    setWater(next);
+    try {
+      const existing = await base44.entities.WaterLog.filter({ date: today });
+      if (existing[0]) await base44.entities.WaterLog.update(existing[0].id, { amount_ml: next });
+      else await base44.entities.WaterLog.create({ date: today, amount_ml: next });
+    } finally { setBusy(false); }
+  };
+  const glasses = Math.round(water / 250);
+  const glassesTarget = Math.max(1, Math.round(profile.water_target_ml / 250));
+  const remaining = (consumed, target) => Math.max(0, Math.round(target - consumed));
+  const fmt = (n) => Math.round(n).toLocaleString();
+  const nutritionPct = profile.calorie_target > 0 ? Math.min(100, Math.round((calories / profile.calorie_target) * 100)) : 0;
+  const macroGrid = [
+    { label: "Calories", value: fmt(remaining(calories, profile.calorie_target)), sub: "remaining", icon: Flame },
+    { label: "Protein", value: `${remaining(protein, profile.protein_target)}g`, sub: "remaining", icon: Beef },
+    { label: "Carbs", value: `${remaining(carbs, profile.carb_target)}g`, sub: "remaining", icon: Wheat },
+    { label: "Fat", value: `${remaining(fat, profile.fat_target)}g`, sub: "remaining", icon: Droplets },
+  ];
+  const actions = [
+    { label: "Log Meal", icon: UtensilsCrossed, to: "/fuel" },
+    { label: "Log Workout", icon: Dumbbell, to: "/train" },
+    { label: "Log Steps", icon: Footprints, to: "/stats" },
+    { label: "Log Water", icon: Droplets, onClick: () => adjustWater(250) },
+  ];
+  const distance = (steps * 0.0008).toFixed(1);
+  const activeTime = Math.round(steps / 130);
+  const activeCals = Math.round(steps * 0.04);
+  const quickStats = [
+    { label: "Steps", value: fmt(steps), icon: Footprints },
+    { label: "Distance", value: `${distance} km`, icon: TrendingUp },
+    { label: "Active Time", value: `${activeTime} min`, icon: Clock },
+    { label: "Active Cals", value: `${activeCals}`, icon: Flame },
+  ];
+  const planStats = [
+    { label: "Calories", value: fmt(profile.calorie_target), icon: Flame },
+    { label: "Protein", value: `${profile.protein_target}g`, icon: Beef },
+    { label: "Water", value: `${(profile.water_target_ml / 1000).toFixed(1)}L`, icon: Droplets },
+  ];
+
+  return <Full>
+    <div className="mb-5 flex items-center justify-between">
+      <Link to="/register" className="no-tap-highlight rounded-full border border-primary px-4 py-1.5 text-[11px] font-bold tracking-wide text-primary">SIGN UP</Link>
+      <Link to="/" className="flex items-center gap-1.5"><Zap className="h-5 w-5 fill-primary text-primary" /><span className="text-lg font-extrabold tracking-tight text-glow">SHIFT FIT</span></Link>
+      <button onClick={() => toast({ title: "Settings", description: "Settings panel coming soon." })} className="no-tap-highlight flex h-9 w-9 items-center justify-center rounded-full border border-border text-foreground"><Settings className="h-5 w-5" /></button>
+    </div>
+
+    <div className="mb-5 flex items-center justify-between rounded-2xl border border-border bg-card p-3">
+      <div className="flex items-center gap-3"><div className="glow-cyan flex h-12 w-12 items-center justify-center rounded-full border border-primary bg-secondary text-lg font-bold text-primary">{profile.full_name?.[0]?.toUpperCase()}</div><div><div className="text-base font-bold leading-tight">{profile.full_name}</div><div className="text-xs text-muted-foreground">Level 1 • ShiftFit Member</div></div></div>
+      <Link to="/stats" className="no-tap-highlight flex items-center gap-2 rounded-xl border border-border bg-secondary/60 px-3 py-2"><Footprints className="h-4 w-4 text-primary" /><div className="text-right"><div className="text-sm font-bold leading-none">{fmt(steps)}</div><div className="text-[10px] text-muted-foreground">Steps today</div></div><ChevronRight className="h-4 w-4 text-muted-foreground" /></Link>
+    </div>
+
+    <div className="mb-5 rounded-2xl border border-primary/40 bg-card p-4 glow-cyan">
+      <div className="mb-1 flex items-center justify-between"><h2 className="text-lg font-bold">Today's Plan</h2><span className={cn("rounded-full border px-3 py-1 text-[10px] font-bold tracking-wide", shift === "night" ? "border-accent text-accent" : "border-primary text-primary")}>{SHIFT_LABEL[shift]}</span></div>
+      <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground"><Calendar className="h-4 w-4 text-primary" />{shift === "rest" ? "No work shift" : `${WEEKDAY_LABELS[wdIdx]} · ${shift === "night" ? "Night" : "Day"} shift`}</div>
+      <div className="grid grid-cols-3 gap-2">{planStats.map((s) => { const Icon = s.icon; return <div key={s.label} className="rounded-xl border border-border bg-secondary/40 p-3 text-center"><Icon className="mx-auto mb-1 h-4 w-4 text-primary" /><div className="text-base font-bold leading-tight">{s.value}</div><div className="text-[10px] text-muted-foreground">{s.label}</div></div>; })}</div>
+    </div>
+
+    <p className="text-xs font-bold uppercase tracking-widest text-primary">Today's Plan</p><h2 className="mb-4 text-lg font-bold">Track your day</h2>
+    <div className="mb-3 rounded-2xl border border-border bg-card p-4">
+      <div className="flex items-center justify-between"><div className="flex items-center gap-3"><div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/15 text-primary"><Droplets className="h-4 w-4" /></div><div><div className="text-sm font-semibold">Water</div><div className="text-xs text-muted-foreground">{glasses}/{glassesTarget} glasses</div></div></div><button disabled={busy} onClick={() => adjustWater(250)} className="no-tap-highlight flex h-9 w-9 items-center justify-center rounded-xl border border-primary bg-primary/10 text-primary disabled:opacity-50"><Plus className="h-5 w-5" /></button></div>
+      <div className="mt-4 grid grid-cols-4 gap-2">{macroGrid.map((m) => { const Icon = m.icon; return <div key={m.label} className="rounded-xl border border-border bg-secondary/40 p-2 text-center"><Icon className="mx-auto mb-1 h-3.5 w-3.5 text-primary" /><div className="text-xs font-bold leading-tight">{m.value}</div><div className="text-[9px] text-muted-foreground">{m.label}</div></div>; })}</div>
+      <div className="mt-4"><div className="mb-1 flex items-center justify-between text-[11px] text-muted-foreground"><span>Today's nutrition</span><span>{nutritionPct}%</span></div><div className="h-2 w-full overflow-hidden rounded-full bg-secondary"><div className="h-full rounded-full bg-primary glow-cyan transition-all duration-700" style={{ width: `${nutritionPct}%` }} /></div></div>
+    </div>
+
+    <div className="mb-6 grid grid-cols-2 gap-3">{actions.map((a) => { const Icon = a.icon; const inner = <><div className="flex items-center gap-3"><div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/15 text-primary"><Icon className="h-4 w-4" /></div><span className="text-sm font-semibold">{a.label}</span></div><Plus className="h-4 w-4 text-primary" /></>; const cls = "no-tap-highlight flex items-center justify-between rounded-2xl border border-border bg-card p-4 transition-colors active:bg-secondary/50"; return a.to ? <Link key={a.label} to={a.to} className={cls}>{inner}</Link> : <button key={a.label} onClick={a.onClick} disabled={busy} className={cls}>{inner}</button>; })}</div>
+
+    <div className="mb-3 flex items-center justify-between"><h2 className="text-lg font-bold">Quick Stats</h2><Link to="/stats" className="text-xs font-semibold text-primary">View All &gt;</Link></div>
+    <div className="mb-5 grid grid-cols-4 gap-2">{quickStats.map((s) => { const Icon = s.icon; return <div key={s.label} className="rounded-xl border border-border bg-card p-2.5 text-center"><Icon className="mx-auto mb-1 h-3.5 w-3.5 text-primary" /><div className="text-xs font-bold leading-tight">{s.value}</div><div className="text-[9px] text-muted-foreground">{s.label}</div></div>; })}</div>
+
+    <div className="mb-2 flex items-center justify-between rounded-2xl border border-primary/40 bg-card p-4 glow-cyan"><div className="flex items-center gap-3"><div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/15 text-primary"><Plug className="h-4 w-4" /></div><div><div className="text-sm font-semibold">Connect & Sync</div><div className="text-xs text-muted-foreground">Strava, Garmin, Apple Health & more</div></div></div><button onClick={() => toast({ title: "Coming soon", description: "Wearable sync integrations are on the way." })} className="no-tap-highlight rounded-full border border-primary px-4 py-1.5 text-[11px] font-bold tracking-wide text-primary">CONNECT</button></div>
+  </Full>;
+}
+function Full({ children }) { return <AppLayout>{children}</AppLayout>; }
+function Splash() { return <div className="flex min-h-screen items-center justify-center bg-background"><div className="h-8 w-8 animate-spin rounded-full border-2 border-secondary border-t-primary" /></div>; }
