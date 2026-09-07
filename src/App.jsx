@@ -8,10 +8,12 @@ import Progress from "@/pages/Progress";
 import Onboarding from "@/pages/Onboarding";
 import Calendar from "@/pages/Calendar";
 import Shopping from "@/pages/Shopping";
+import Register from "@/pages/Register";
 
 export default function App() {
   return <Routes>
     <Route path="/" element={<Dashboard />} />
+    <Route path="/register" element={<Register />} />
     <Route path="/onboarding" element={<Onboarding />} />
     <Route path="/calendar" element={<Calendar />} />
     <Route path="/train" element={<Workouts />} />
