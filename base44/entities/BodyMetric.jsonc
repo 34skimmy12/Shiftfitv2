@@ -1,0 +1,3 @@
+{
+  "name":"BodyMetric","type":"object","properties":{"date":{"type":"string","format":"date"},"weight_kg":{"type":"number"},"body_fat_pct":{"type":"number"},"muscle_mass_kg":{"type":"number"},"waist_cm":{"type":"number"}},"required":["date","weight_kg"]
+}
