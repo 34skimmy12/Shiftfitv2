@@ -1,0 +1,5 @@
+{
+  "name":"WorkoutPlan","type":"object","properties":{
+    "day_index":{"type":"number"},"day_label":{"type":"string"},"shift_context":{"type":"string","enum":["day","night","rest"]},"title":{"type":"string"},"focus":{"type":"string"},"duration_min":{"type":"number"},"intensity":{"type":"string","enum":["low","moderate","high"]},"exercises":{"type":"array","items":{"type":"object","properties":{"name":{"type":"string"},"sets":{"type":"number"},"reps":{"type":"string"},"rest_sec":{"type":"number"},"notes":{"type":"string"}}}}
+  },"required":["day_index","day_label","shift_context","title","exercises"]
+}
