@@ -42,11 +42,6 @@ const STORE_PRICES = {
     stores: { Aldi: { price: 0.95 }, Asda: { price: 1.80 }, Tesco: { price: 1.80 } },
     source: "Basketr exact-product comparison", checkedAt: "8 Sep 2026",
   },
-  honey: {
-    unit: "g", pack: 340,
-    stores: { Asda: { price: 2.48 }, "Sainsbury’s": { price: 3.75 }, Tesco: { price: 3.00 }, Morrisons: { price: 3.00 } },
-    source: "Basketr exact-product comparison", checkedAt: "8 Sep 2026",
-  },
 };
 
 function normaliseKey(value) {
@@ -59,7 +54,6 @@ function normaliseKey(value) {
   if (n.includes("olive oil")) return "olive oil";
   if (n.includes("skyr")) return "skyr";
   if (n.includes("peanut butter")) return "peanut butter";
-  if (n.includes("honey")) return "honey";
   return null;
 }
 
