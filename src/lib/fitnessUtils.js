@@ -26,20 +26,29 @@ export function generateWorkoutPlans(profile) { return Array.from({ length: 7 },
 
 function roundTo(n, step) { return Math.round(n / step) * step; }
 const MEAL_LIBRARY = [
-  { key: "yogurt_bowl", shifts: ["day", "rest"], types: ["breakfast"], name: "Greek Yogurt Berry Bowl", tags: ["yogurt", "berries", "oats", "vegetarian"], items: ["Greek yogurt 250g", "Oats 40g", "Mixed berries 100g", "Honey 1 tsp"], p: 30, c: 48, f: 7 },
-  { key: "eggs_toast", shifts: ["day", "rest"], types: ["breakfast"], name: "Eggs, Avocado & Wholegrain Toast", tags: ["eggs", "avocado", "vegetarian"], items: ["Eggs 3", "Wholegrain toast 2 slices", "Avocado 1/2", "Spinach"], p: 28, c: 40, f: 20 },
-  { key: "protein_oats", shifts: ["day", "night"], types: ["breakfast", "pre_shift"], name: "Protein Overnight Oats", tags: ["oats", "whey", "banana"], items: ["Oats 60g", "Whey protein 1 scoop", "Banana", "Milk 200ml"], p: 35, c: 65, f: 9 },
-  { key: "chicken_rice", shifts: ["day", "night"], types: ["lunch", "dinner"], name: "Chicken, Rice & Broccoli", tags: ["chicken", "rice", "broccoli"], items: ["Chicken breast 180g", "Brown rice 150g", "Broccoli", "Olive oil 1 tbsp"], p: 52, c: 58, f: 13 },
-  { key: "beef_rice", shifts: ["day", "rest"], types: ["lunch", "dinner"], name: "Lean Beef & Rice Stir-Fry", tags: ["beef", "rice", "vegetables"], items: ["Lean beef 160g", "Brown rice 140g", "Mixed stir-fry vegetables", "Sesame oil 1 tsp"], p: 46, c: 54, f: 17 },
-  { key: "salmon_potato", shifts: ["day", "rest"], types: ["dinner"], name: "Salmon, Sweet Potato & Greens", tags: ["salmon", "sweet potato", "avocado"], items: ["Salmon 160g", "Sweet potato 200g", "Spinach", "Avocado 1/4"], p: 39, c: 43, f: 21 },
-  { key: "turkey_quinoa", shifts: ["night", "day"], types: ["lunch", "dinner"], name: "Turkey & Quinoa Power Bowl", tags: ["turkey", "quinoa", "vegetables"], items: ["Turkey mince 160g", "Quinoa 120g", "Mixed vegetables", "Olive oil 1 tsp"], p: 47, c: 48, f: 14 },
+  { key: "yogurt_bowl", shifts: ["day", "rest", "night"], types: ["breakfast", "pre_shift"], name: "Greek Yogurt Berry Bowl", tags: ["yogurt", "berries", "oats", "vegetarian"], items: ["Greek yogurt 250g", "Oats 40g", "Mixed berries 100g", "Honey 1 tsp"], p: 30, c: 48, f: 7 },
+  { key: "eggs_toast", shifts: ["day", "rest", "night"], types: ["breakfast", "pre_shift"], name: "Eggs, Avocado & Wholegrain Toast", tags: ["eggs", "avocado", "vegetarian"], items: ["Eggs 3", "Wholegrain toast 2 slices", "Avocado 1/2", "Spinach"], p: 28, c: 40, f: 20 },
+  { key: "protein_oats", shifts: ["day", "night", "rest"], types: ["breakfast", "pre_shift"], name: "Protein Overnight Oats", tags: ["oats", "whey", "banana"], items: ["Oats 60g", "Whey protein 1 scoop", "Banana", "Milk 200ml"], p: 35, c: 65, f: 9 },
+  { key: "protein_pancakes", shifts: ["day", "night", "rest"], types: ["breakfast", "pre_shift"], name: "Protein Pancakes & Berries", tags: ["pancakes", "whey", "berries", "banana"], items: ["Oats 50g", "Whey protein 1 scoop", "Egg 1", "Mixed berries 100g", "Greek yogurt 100g"], p: 39, c: 50, f: 9 },
+  { key: "salmon_eggs", shifts: ["day", "night", "rest"], types: ["breakfast", "pre_shift"], name: "Smoked Salmon, Eggs & Toast", tags: ["salmon", "eggs", "toast", "avocado"], items: ["Smoked salmon 80g", "Eggs 2", "Wholegrain toast 2 slices", "Spinach"], p: 34, c: 34, f: 17 },
+  { key: "turkey_toast", shifts: ["day", "night", "rest"], types: ["breakfast", "pre_shift"], name: "Turkey & Avocado Breakfast Toast", tags: ["turkey", "avocado", "toast"], items: ["Turkey slices 100g", "Wholegrain toast 2 slices", "Avocado 1/2", "Tomato"], p: 32, c: 36, f: 16 },
+  { key: "chicken_rice", shifts: ["day", "night", "rest"], types: ["lunch", "dinner"], name: "Chicken, Rice & Broccoli", tags: ["chicken", "rice", "broccoli"], items: ["Chicken breast 180g", "Brown rice 150g", "Broccoli", "Olive oil 1 tbsp"], p: 52, c: 58, f: 13 },
+  { key: "beef_rice", shifts: ["day", "rest", "night"], types: ["lunch", "dinner"], name: "Lean Beef & Rice Stir-Fry", tags: ["beef", "rice", "vegetables"], items: ["Lean beef 160g", "Brown rice 140g", "Mixed stir-fry vegetables", "Sesame oil 1 tsp"], p: 46, c: 54, f: 17 },
+  { key: "salmon_potato", shifts: ["day", "rest", "night"], types: ["dinner", "lunch"], name: "Salmon, Sweet Potato & Greens", tags: ["salmon", "sweet potato", "avocado"], items: ["Salmon 160g", "Sweet potato 200g", "Spinach", "Avocado 1/4"], p: 39, c: 43, f: 21 },
+  { key: "turkey_quinoa", shifts: ["night", "day", "rest"], types: ["lunch", "dinner"], name: "Turkey & Quinoa Power Bowl", tags: ["turkey", "quinoa", "vegetables"], items: ["Turkey mince 160g", "Quinoa 120g", "Mixed vegetables", "Olive oil 1 tsp"], p: 47, c: 48, f: 14 },
   { key: "tuna_wrap", shifts: ["night", "day", "rest"], types: ["lunch"], name: "Tuna & Hummus Wholegrain Wrap", tags: ["tuna", "wrap", "hummus"], items: ["Tuna 120g", "Wholegrain wrap", "Hummus 40g", "Salad leaves"], p: 38, c: 42, f: 12 },
   { key: "chicken_wrap", shifts: ["day", "night", "rest"], types: ["lunch"], name: "Chicken & Hummus Wrap", tags: ["chicken", "wrap", "hummus"], items: ["Chicken 150g", "Wholegrain wrap", "Hummus 40g", "Salad leaves"], p: 42, c: 44, f: 13 },
+  { key: "chicken_quinoa", shifts: ["day", "night", "rest"], types: ["lunch", "dinner"], name: "Chicken & Quinoa Power Bowl", tags: ["chicken", "quinoa", "vegetables"], items: ["Chicken breast 170g", "Quinoa 140g", "Mixed vegetables", "Olive oil 1 tsp"], p: 50, c: 49, f: 13 },
+  { key: "cod_potato", shifts: ["day", "night", "rest"], types: ["dinner", "lunch"], name: "Cod, Potatoes & Green Beans", tags: ["cod", "potatoes", "vegetables"], items: ["Cod fillet 180g", "Baby potatoes 250g", "Green beans", "Olive oil 1 tsp"], p: 43, c: 48, f: 10 },
   { key: "cottage_fruit", shifts: ["day", "night", "rest"], types: ["snack", "post_shift"], name: "Cottage Cheese, Fruit & Almonds", tags: ["cottage cheese", "pear", "almonds"], items: ["Cottage cheese 200g", "Pear", "Almonds 20g"], p: 27, c: 29, f: 13 },
   { key: "shake_banana", shifts: ["day", "night", "rest"], types: ["snack"], name: "Protein Shake & Banana", tags: ["whey", "banana", "milk"], items: ["Whey protein 1 scoop", "Banana", "Milk 200ml"], p: 30, c: 34, f: 5 },
-  { key: "smoothie", shifts: ["rest", "day"], types: ["snack"], name: "Berry Protein Smoothie", tags: ["whey", "berries", "spinach"], items: ["Whey protein 1 scoop", "Frozen berries 100g", "Spinach", "Milk 200ml", "Chia seeds 10g"], p: 30, c: 27, f: 8 },
-  { key: "omelette", shifts: ["rest", "night"], types: ["breakfast", "post_shift"], name: "Veggie Omelette & Toast", tags: ["eggs", "vegetables", "vegetarian"], items: ["Eggs 3", "Peppers & onion", "Wholegrain toast 2 slices", "Spinach"], p: 30, c: 37, f: 18 },
-  { key: "recovery_toast", shifts: ["night"], types: ["post_shift"], name: "Post-Shift Eggs & Toast", tags: ["eggs", "toast", "avocado"], items: ["Eggs 3", "Wholegrain toast 2 slices", "Avocado 1/4", "Spinach"], p: 30, c: 35, f: 18 }
+  { key: "smoothie", shifts: ["rest", "day", "night"], types: ["snack"], name: "Berry Protein Smoothie", tags: ["whey", "berries", "spinach"], items: ["Whey protein 1 scoop", "Frozen berries 100g", "Spinach", "Milk 200ml", "Chia seeds 10g"], p: 30, c: 27, f: 8 },
+  { key: "skyr_berries", shifts: ["day", "night", "rest"], types: ["snack", "post_shift"], name: "Skyr, Berries & Seeds", tags: ["skyr", "berries", "seeds", "yogurt"], items: ["Skyr 200g", "Mixed berries 100g", "Pumpkin seeds 15g", "Honey 1 tsp"], p: 27, c: 25, f: 9 },
+  { key: "apple_pb", shifts: ["day", "night", "rest"], types: ["snack"], name: "Apple & Peanut Butter Protein Snack", tags: ["apple", "peanut butter", "whey"], items: ["Apple", "Peanut butter 20g", "Whey protein 1/2 scoop"], p: 20, c: 30, f: 12 },
+  { key: "omelette", shifts: ["rest", "night", "day"], types: ["breakfast", "post_shift"], name: "Veggie Omelette & Toast", tags: ["eggs", "vegetables", "vegetarian"], items: ["Eggs 3", "Peppers & onion", "Wholegrain toast 2 slices", "Spinach"], p: 30, c: 37, f: 18 },
+  { key: "recovery_toast", shifts: ["night", "day", "rest"], types: ["post_shift"], name: "Post-Shift Eggs & Toast", tags: ["eggs", "toast", "avocado"], items: ["Eggs 3", "Wholegrain toast 2 slices", "Avocado 1/4", "Spinach"], p: 30, c: 35, f: 18 },
+  { key: "chicken_egg_wrap", shifts: ["night", "day"], types: ["pre_shift", "post_shift"], name: "Chicken & Egg Wholegrain Wrap", tags: ["chicken", "eggs", "wrap"], items: ["Chicken 100g", "Egg 1", "Wholegrain wrap", "Spinach", "Tomato"], p: 38, c: 35, f: 12 },
+  { key: "greek_protein_post", shifts: ["night", "day", "rest"], types: ["post_shift"], name: "Greek Yogurt Protein Bowl", tags: ["yogurt", "berries", "whey", "oats"], items: ["Greek yogurt 200g", "Whey protein 1/2 scoop", "Mixed berries 100g", "Oats 30g"], p: 32, c: 39, f: 5 }
 ];
 const MEAL_SLOTS = { day: ["breakfast", "lunch", "snack", "dinner"], night: ["pre_shift", "snack", "lunch", "post_shift"], rest: ["breakfast", "lunch", "snack", "dinner"] };
 function normaliseList(value) { if (Array.isArray(value)) return value.map((x) => String(x).trim().toLowerCase()).filter(Boolean); return String(value || "").split(",").map((x) => x.trim().toLowerCase()).filter(Boolean); }
@@ -65,50 +74,40 @@ export function generateMealPlans(profile, targets) {
   return plans;
 }
 
-function normaliseSwapText(value) { return String(value || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, " ").trim(); }
-function normaliseSwapShift(plan, profile) {
-  const raw = normaliseSwapText(plan?.shift_context);
-  if (["day", "night", "rest"].includes(raw)) return raw;
-  const pattern = normaliseSwapText(profile?.shift_pattern);
+const normaliseText = (value) => String(value || "").trim().toLowerCase();
+function normaliseShift(plan, profile) {
+  const direct = normaliseText(plan?.shift_context);
+  if (["day", "night", "rest"].includes(direct)) return direct;
+  const pattern = normaliseText(profile?.shift_pattern);
   if (pattern.includes("night")) return "night";
+  if (pattern.includes("rotat")) return "day";
   return "day";
 }
-function sameMealDefinition(meal, current) {
-  const currentKey = normaliseSwapText(current?.meal_key);
-  const currentName = normaliseSwapText(current?.name);
-  return (currentKey && normaliseSwapText(meal.key) === currentKey) || (currentName && normaliseSwapText(meal.name) === currentName);
-}
-function swapCandidates(plan, mealIndex, profile) {
+function isSameMeal(libraryMeal, current) { return libraryMeal.key === current?.meal_key || normaliseText(libraryMeal.name) === normaliseText(current?.name); }
+function getCompatibleSwapCandidates(plan, mealIndex, profile) {
   const current = plan?.meals?.[mealIndex]; if (!current) return [];
+  const shift = normaliseShift(plan, profile); const slot = normaliseText(current.type);
   const likes = normaliseList(profile?.food_likes); const avoid = normaliseList(profile?.food_avoid);
-  const slot = normaliseSwapText(current.type);
-  const shift = normaliseSwapShift(plan, profile);
-  const inShift = MEAL_LIBRARY.filter((m) => m.shifts.includes(shift) && m.types.includes(slot) && !sameMealDefinition(m, current));
-  const safe = inShift.filter((m) => !matchesPreference(m, [], avoid));
-  const pool = safe.length ? safe : inShift;
-  const liked = pool.filter((m) => matchesPreference(m, likes, []));
-  return [...liked, ...pool.filter((m) => !liked.includes(m))];
+  let candidates = MEAL_LIBRARY.filter((m) => m.shifts.includes(shift) && m.types.includes(slot) && !isSameMeal(m, current) && !matchesPreference(m, [], avoid));
+  if (!candidates.length) candidates = MEAL_LIBRARY.filter((m) => m.types.includes(slot) && !isSameMeal(m, current) && !matchesPreference(m, [], avoid));
+  const liked = candidates.filter((m) => matchesPreference(m, likes, []));
+  return liked.length ? [...liked, ...candidates.filter((m) => !liked.includes(m))] : candidates;
 }
-
-export function getMealSwapOptions(plan, mealIndex, profile, limit = 3) {
-  return swapCandidates(plan, mealIndex, profile).slice(0, limit).map((m) => ({ key: m.key, name: m.name, items: m.items }));
+export function getMealSwapOptions(plan, mealIndex, profile, limit = 4) {
+  return getCompatibleSwapCandidates(plan, mealIndex, profile).slice(0, Math.max(1, limit)).map((m) => ({ key: m.key, name: m.name, items: m.items }));
 }
 
 export function swapMeal(plan, mealIndex, profile, targets, replacementKey = null) {
   if (!plan?.meals?.[mealIndex]) return plan;
-  const current = plan.meals[mealIndex];
-  const candidates = swapCandidates(plan, mealIndex, profile);
-  const avoid = normaliseList(profile?.food_avoid);
+  const current = plan.meals[mealIndex]; const shift = normaliseShift(plan, profile); const slot = normaliseText(current.type); const avoid = normaliseList(profile?.food_avoid);
   let replacement = replacementKey ? MEAL_LIBRARY.find((m) => m.key === replacementKey) : null;
-  const shift = normaliseSwapShift(plan, profile);
-  const slot = normaliseSwapText(current.type);
-  if (!replacement || !replacement.shifts.includes(shift) || !replacement.types.includes(slot) || sameMealDefinition(replacement, current) || matchesPreference(replacement, [], avoid) === false) replacement = null;
-  if (!replacement) replacement = candidates[0];
+  if (!replacement || !replacement.shifts.includes(shift) || !replacement.types.includes(slot) || isSameMeal(replacement, current) || matchesPreference(replacement, [], avoid)) replacement = null;
+  if (!replacement) replacement = getCompatibleSwapCandidates(plan, mealIndex, profile)[0];
   if (!replacement) return plan;
   const baseCalories = plan.meals.reduce((sum, m, idx) => idx === mealIndex ? sum : sum + m.calories, 0);
   const desiredMealCalories = Math.max(150, (targets.calorie_target || plan.total_calories || 2000) - baseCalories);
   const replacementBase = replacement.p * 4 + replacement.c * 4 + replacement.f * 9;
-  const scale = desiredMealCalories / replacementBase;
+  const scale = replacementBase > 0 ? desiredMealCalories / replacementBase : 1;
   const nextMeal = buildMeal(replacement, slot, scale, profile.goal === "gain" ? 1.02 : profile.goal === "lose" ? 0.98 : 1);
   const meals = plan.meals.map((m, idx) => idx === mealIndex ? nextMeal : m);
   return { ...plan, meals, total_calories: meals.reduce((s, m) => s + m.calories, 0), total_protein: meals.reduce((s, m) => s + m.protein, 0) };
@@ -116,7 +115,7 @@ export function swapMeal(plan, mealIndex, profile, targets, replacementKey = nul
 
 export function generateShoppingList(mealPlans) {
   const items = []; const seen = new Set();
-  const categorize = (name) => { const n = name.toLowerCase(); if (/(chicken|salmon|turkey|beef|tuna|eggs?|whey|cottage cheese|greek yogurt|yogurt)/.test(n)) return "Protein"; if (/(broccoli|spinach|peppers|onion|berries|pear|avocado|veg|salad|greens|stir-fry)/.test(n)) return "Produce"; if (/(milk|cheese|butter|hummus|honey)/.test(n)) return "Dairy"; if (/(rice|oats|quinoa|toast|wrap|granola|bread|chia)/.test(n)) return "Grains"; if (/(oil|almonds|peanut|sesame|seeds)/.test(n)) return "Pantry"; return "Other"; };
+  const categorize = (name) => { const n = name.toLowerCase(); if (/(chicken|salmon|turkey|beef|tuna|eggs?|whey|cottage cheese|greek yogurt|yogurt|skyr|cod)/.test(n)) return "Protein"; if (/(broccoli|spinach|peppers|onion|berries|pear|avocado|veg|salad|greens|stir-fry|tomato|beans)/.test(n)) return "Produce"; if (/(milk|cheese|butter|hummus|honey)/.test(n)) return "Dairy"; if (/(rice|oats|quinoa|toast|wrap|granola|bread|chia|potatoes|pancakes)/.test(n)) return "Grains"; if (/(oil|almonds|peanut|sesame|seeds)/.test(n)) return "Pantry"; return "Other"; };
   mealPlans.forEach((plan) => plan.meals.forEach((m) => m.items.forEach((it) => { const key = it.toLowerCase(); if (!seen.has(key)) { seen.add(key); items.push({ name: it, category: categorize(it), quantity: "x7 days", checked: false }); } })));
   return items;
 }
