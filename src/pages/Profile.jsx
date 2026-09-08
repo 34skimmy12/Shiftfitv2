@@ -4,67 +4,19 @@ import { base44 } from "@/api/base44Client";
 import { supabase } from "@/lib/supabaseClient";
 import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { computeTargets, generateMealPlans, generateShoppingList, generateWorkoutPlans } from "@/lib/fitnessUtils";
-import { ArrowLeft, Save, RefreshCw, UserRound, Target, Clock3, LogOut, Settings2 } from "lucide-react";
-import { cn } from "@/lib/utils";
-
-const GOALS = [
-  { value: "lose", label: "Lose weight", desc: "Calorie deficit + high protein" },
-  { value: "maintain", label: "Maintain", desc: "Stay strong and consistent" },
-  { value: "gain", label: "Build muscle", desc: "Small surplus + progressive training" },
-];
+import { ArrowLeft, UserRound, Target, Clock3, LogOut, Pencil } from "lucide-react";
 
 export default function Profile() {
   const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
-  const [form, setForm] = useState(null);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState("");
   const [loggingOut, setLoggingOut] = useState(false);
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
-    base44.entities.UserProfile.list().then((rows) => {
-      const p = rows[0];
-      setProfile(p || null);
-      if (p) setForm({ ...p, food_likes: (p.food_likes || []).join(", "), food_avoid: (p.food_avoid || []).join(", ") });
-    });
+    base44.entities.UserProfile.list().then((rows) => setProfile(rows[0] || null));
   }, []);
 
-  if (!form) return <Splash />;
-  const set = (key, value) => setForm((f) => ({ ...f, [key]: value }));
-
-  const save = async (regenerate = false) => {
-    setSaving(true); setMessage("");
-    try {
-      const clean = {
-        ...form,
-        age: Number(form.age), height_cm: Number(form.height_cm), weight_kg: Number(form.weight_kg),
-        food_likes: String(form.food_likes || "").split(",").map((x) => x.trim()).filter(Boolean),
-        food_avoid: String(form.food_avoid || "").split(",").map((x) => x.trim()).filter(Boolean),
-      };
-      const targets = computeTargets(clean);
-      const updated = await base44.entities.UserProfile.update(profile.id, { ...clean, ...targets });
-      setProfile(updated); setForm({ ...updated, food_likes: (updated.food_likes || []).join(", "), food_avoid: (updated.food_avoid || []).join(", ") });
-      if (regenerate) {
-        const meals = generateMealPlans({ ...clean, ...targets }, targets);
-        const workouts = generateWorkoutPlans({ ...clean, ...targets });
-        const existingMeals = await base44.entities.MealPlan.list();
-        await Promise.all(existingMeals.map((p) => base44.entities.MealPlan.delete(p.id)));
-        await base44.entities.MealPlan.bulkCreate(meals);
-        const existingWorkouts = await base44.entities.WorkoutPlan.list();
-        await Promise.all(existingWorkouts.map((p) => base44.entities.WorkoutPlan.delete(p.id)));
-        await base44.entities.WorkoutPlan.bulkCreate(workouts);
-        const oldShopping = await base44.entities.ShoppingListItem.list();
-        await Promise.all(oldShopping.map((item) => base44.entities.ShoppingListItem.delete(item.id)));
-        const list = generateShoppingList(meals);
-        if (list.length) await base44.entities.ShoppingListItem.bulkCreate(list);
-        setMessage("Saved — your full 7-day plan has been rebuilt.");
-      } else setMessage("Profile saved.");
-    } catch (e) { setMessage("Couldn’t save your changes. Try again."); }
-    finally { setSaving(false); }
-  };
+  if (!profile) return <Splash />;
 
   const logout = async () => {
     if (!supabase) return;
@@ -78,36 +30,58 @@ export default function Profile() {
     navigate("/login", { replace: true });
   };
 
+  const goalLabel = profile.goal === "lose" ? "Lose weight" : profile.goal === "gain" ? "Build muscle" : "Maintain";
+  const shiftLabel = profile.shift_pattern === "fixed_day" ? "Fixed day" : profile.shift_pattern === "fixed_night" ? "Fixed night" : "Rotating";
+  const workDays = (profile.work_days || []).map((d) => d.slice(0, 1).toUpperCase() + d.slice(1, 3)).join(" • ") || "Not set";
+
   return <AppLayout>
-    <div className="mb-5 flex items-center gap-3"><button onClick={() => navigate(-1)} className="flex h-9 w-9 items-center justify-center rounded-xl bg-secondary"><ArrowLeft className="h-4 w-4" /></button><div className="flex-1"><h1 className="text-xl font-bold">Profile</h1><p className="text-xs text-muted-foreground">Control your ShiftFit plan</p></div></div>
+    <div className="mb-5 flex items-center gap-3">
+      <button onClick={() => navigate(-1)} className="flex h-9 w-9 items-center justify-center rounded-xl bg-secondary" aria-label="Go back"><ArrowLeft className="h-4 w-4" /></button>
+      <div className="flex-1"><h1 className="text-xl font-bold">Profile</h1><p className="text-xs text-muted-foreground">Your ShiftFit profile and plan setup</p></div>
+    </div>
 
     <button type="button" onClick={() => navigate("/onboarding")} className="mb-4 flex w-full items-center gap-3 rounded-2xl border border-primary/25 bg-primary/5 p-4 text-left transition-colors hover:bg-primary/10">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Settings2 className="h-5 w-5" /></div>
-      <div className="min-w-0 flex-1"><div className="text-sm font-bold">Edit onboarding & plan setup</div><div className="mt-1 text-xs text-muted-foreground">Change your goal, shifts, start date, training and personal details.</div></div>
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Pencil className="h-5 w-5" /></div>
+      <div className="min-w-0 flex-1"><div className="text-sm font-bold">Edit profile & plan setup</div><div className="mt-1 text-xs text-muted-foreground">Change your personal details, goal, nutrition, shifts and training.</div></div>
       <span className="text-sm font-semibold text-primary">Edit</span>
     </button>
 
-    <Section icon={UserRound} title="Personal details" subtitle="These drive your calorie and recovery targets.">
-      <Field label="Name" value={form.full_name || ""} onChange={(v) => set("full_name", v)} />
-      <div className="grid grid-cols-2 gap-3"><Field label="Age" type="number" value={form.age || ""} onChange={(v) => set("age", v)} /><Field label="Sex" select value={form.sex || "male"} options={["male", "female", "other"]} onChange={(v) => set("sex", v)} /></div>
-      <div className="grid grid-cols-2 gap-3"><Field label="Height (cm)" type="number" value={form.height_cm || ""} onChange={(v) => set("height_cm", v)} /><Field label="Weight (kg)" type="number" value={form.weight_kg || ""} onChange={(v) => set("weight_kg", v)} /></div>
-    </Section>
-    <Section icon={Target} title="Goal & nutrition" subtitle="Change your goal and ShiftFit recalculates your targets.">
-      <div className="space-y-2">{GOALS.map((g) => <button key={g.value} onClick={() => set("goal", g.value)} className={cn("w-full rounded-2xl border p-4 text-left", form.goal === g.value ? "border-primary bg-primary/10" : "border-border bg-card")}><div className="font-semibold">{g.label}</div><div className="text-xs text-muted-foreground">{g.desc}</div></button>)}</div>
-      <div className="grid grid-cols-2 gap-3"><Field label="Calories / day" type="number" value={form.calorie_target || ""} onChange={(v) => set("calorie_target", v)} /><Field label="Protein (g)" type="number" value={form.protein_target || ""} onChange={(v) => set("protein_target", v)} /></div>
-      <div className="grid grid-cols-2 gap-3"><Field label="Target weight (kg)" type="number" value={form.target_weight_kg || ""} onChange={(v) => set("target_weight_kg", v)} /><Field label="Activity" select value={form.activity_level || "moderate"} options={["sedentary", "light", "moderate", "active"]} onChange={(v) => set("activity_level", v)} /></div>
-      <div><Label>Foods you like</Label><Input className="mt-2" value={form.food_likes || ""} onChange={(e) => set("food_likes", e.target.value)} placeholder="Chicken, rice, yoghurt..." /></div>
-      <div><Label>Foods to avoid</Label><Input className="mt-2" value={form.food_avoid || ""} onChange={(e) => set("food_avoid", e.target.value)} placeholder="Foods or ingredients..." /></div>
-    </Section>
-    <Section icon={Clock3} title="Shift schedule" subtitle="Your schedule controls day, night and recovery planning.">
-      <Field label="Shift pattern" select value={form.shift_pattern || "fixed_day"} options={["fixed_day", "fixed_night", "rotating"]} onChange={(v) => set("shift_pattern", v)} />
-      <div><Label>Work days</Label><div className="mt-2 grid grid-cols-7 gap-1.5">{["sun","mon","tue","wed","thu","fri","sat"].map((d) => <button key={d} onClick={() => set("work_days", (form.work_days || []).includes(d) ? form.work_days.filter((x) => x !== d) : [...(form.work_days || []), d])} className={cn("rounded-xl py-2 text-[11px] font-semibold", (form.work_days || []).includes(d) ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground")}>{d[0].toUpperCase()}</button>)}</div></div>
-    </Section>
+    <InfoCard icon={UserRound} title="Personal profile">
+      <Row label="Name" value={profile.full_name || "Not set"} />
+      <Row label="Age" value={profile.age ? `${profile.age} years` : "Not set"} />
+      <Row label="Height" value={profile.height_cm ? `${profile.height_cm} cm` : "Not set"} />
+      <Row label="Weight" value={profile.weight_kg ? `${profile.weight_kg} kg` : "Not set"} />
+    </InfoCard>
+
+    <InfoCard icon={Target} title="Current goal">
+      <Row label="Goal" value={goalLabel} />
+      <Row label="Calories" value={profile.calorie_target ? `${profile.calorie_target} kcal/day` : "Not set"} />
+      <Row label="Protein" value={profile.protein_target ? `${profile.protein_target} g/day` : "Not set"} />
+    </InfoCard>
+
+    <InfoCard icon={Clock3} title="Shift schedule">
+      <Row label="Pattern" value={shiftLabel} />
+      <Row label="Work days" value={workDays} />
+      {profile.shift_start_date && <Row label="Start date" value={profile.shift_start_date} />}
+    </InfoCard>
+
     {message && <div className="mb-3 rounded-xl border border-primary/30 bg-primary/10 p-3 text-xs text-primary">{message}</div>}
-    <div className="space-y-2 pb-4"><Button className="w-full" disabled={saving} onClick={() => save(false)}><Save className="mr-2 h-4 w-4" />Save profile</Button><Button variant="outline" className="w-full" disabled={saving} onClick={() => save(true)}><RefreshCw className="mr-2 h-4 w-4" />Save & regenerate my 7-day plan</Button><Button variant="outline" className="w-full" disabled={saving || loggingOut} onClick={logout}><LogOut className="mr-2 h-4 w-4" />{loggingOut ? "Logging out…" : "Log out"}</Button></div>
+
+    <div className="pb-4">
+      <Button variant="outline" className="w-full" disabled={loggingOut} onClick={logout}><LogOut className="mr-2 h-4 w-4" />{loggingOut ? "Logging out…" : "Log out"}</Button>
+    </div>
   </AppLayout>;
 }
 
-function Section({ icon: Icon, title, subtitle, children }) { return <section className="mb-4 rounded-2xl border border-border bg-card p-4"><div className="mb-4 flex items-center gap-3"><div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary"><Icon className="h-4 w-4" /></div><div><h2 className="text-sm font-bold">{title}</h2><p className="text-[11px] text-muted-foreground">{subtitle}</p></div></div><div className="space-y-4">{children}</div></section>; }
-function Field({ label, value, onChange, type = "text", select, options = [] }) { return <div><Label>{label}</Label>{select ? <select className="mt-2 flex h-10 w-full rounded-xl border border-input bg-secondary px-3 text-sm" value={value} onChange={(e) => onChange(e.target.value)}>{options.map((x) => <option key={x} value={x}>{x.replaceAll("_", " ")}</option>)}</select> : <Input className="mt-2" type={type} value={value} onChange={(e) => onChange(e.target.value)} />}</div>; }
+function InfoCard({ icon: Icon, title, children }) {
+  return <section className="mb-4 rounded-2xl border border-border bg-card p-4">
+    <div className="mb-3 flex items-center gap-3"><div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary"><Icon className="h-4 w-4" /></div><h2 className="text-sm font-bold">{title}</h2></div>
+    <div className="space-y-2">{children}</div>
+  </section>;
+}
+
+function Row({ label, value }) {
+  return <div className="flex items-center justify-between gap-4 rounded-xl bg-secondary/50 px-3 py-2.5"><span className="text-xs text-muted-foreground">{label}</span><span className="text-right text-sm font-medium">{value}</span></div>;
+}
+
 function Splash() { return <div className="flex min-h-screen items-center justify-center bg-background"><div className="h-8 w-8 animate-spin rounded-full border-2 border-secondary border-t-primary" /></div>; }
