@@ -4,47 +4,47 @@
 const STORE_PRICES = {
   "chicken breast": {
     unit: "g", pack: 1000,
-    stores: { Aldi: 1.99, Lidl: 4.99, Asda: 2.33, "Sainsbury’s": 2.00, Tesco: 2.44, Morrisons: 2.49 },
+    stores: { Aldi: { price: 1.99 }, Lidl: { price: 4.99 }, Asda: { price: 2.33 }, "Sainsbury’s": { price: 2.00 }, Tesco: { price: 2.44 }, Morrisons: { price: 2.49 } },
     source: "Basketr + Lidl GB public prices", checkedAt: "8 Sep 2026",
   },
   "beef mince": {
     unit: "g", pack: 500,
-    stores: { Lidl: 5.49 * (500 / 800), Asda: 3.25, "Sainsbury’s": 3.09, Tesco: 2.40, Morrisons: 5.05 },
+    stores: { Lidl: { price: 5.49, pack: 800 }, Asda: { price: 3.25 }, "Sainsbury’s": { price: 3.09 }, Tesco: { price: 2.40 }, Morrisons: { price: 5.05 } },
     source: "Basketr + Lidl GB public prices", checkedAt: "8 Sep 2026",
   },
   eggs: {
     unit: "egg", pack: 6,
-    stores: { Aldi: 0.99, Asda: 1.75, "Sainsbury’s": 1.80, Tesco: 1.80, Morrisons: 1.80 },
+    stores: { Aldi: { price: 0.99 }, Asda: { price: 1.75 }, "Sainsbury’s": { price: 1.80 }, Tesco: { price: 1.80 }, Morrisons: { price: 1.80 } },
     source: "Basketr current public comparison", checkedAt: "8 Sep 2026",
   },
   milk: {
     unit: "ml", pack: 1136,
-    stores: { Aldi: 1.20, Asda: 2.34, "Sainsbury’s": 1.65, Tesco: 1.20, Morrisons: 1.20 },
+    stores: { Aldi: { price: 1.20 }, Asda: { price: 2.34 }, "Sainsbury’s": { price: 1.65 }, Tesco: { price: 1.20 }, Morrisons: { price: 1.20 } },
     source: "Basketr current public comparison", checkedAt: "8 Sep 2026",
   },
   "basmati rice": {
     unit: "g", pack: 1000,
-    stores: { Asda: 1.80, "Sainsbury’s": 1.79, Tesco: 1.79, Morrisons: 1.79 },
+    stores: { Asda: { price: 1.80 }, "Sainsbury’s": { price: 1.79 }, Tesco: { price: 1.79 }, Morrisons: { price: 1.79 } },
     source: "Basketr current public comparison", checkedAt: "8 Sep 2026",
   },
   "olive oil": {
     unit: "ml", pack: 500,
-    stores: { Lidl: 5.99, Asda: 4.30, "Sainsbury’s": 4.65, Tesco: 4.75, Morrisons: 6.00 },
+    stores: { Lidl: { price: 5.99 }, Asda: { price: 4.30 }, "Sainsbury’s": { price: 4.65 }, Tesco: { price: 4.75 }, Morrisons: { price: 6.00 } },
     source: "Basketr current public comparison", checkedAt: "8 Sep 2026",
   },
   skyr: {
     unit: "g", pack: 450,
-    stores: { Asda: 1.50, "Sainsbury’s": 1.25, Tesco: 2.50, Morrisons: 2.50 },
+    stores: { Asda: { price: 1.50 }, "Sainsbury’s": { price: 1.25 }, Tesco: { price: 2.50 }, Morrisons: { price: 2.50 } },
     source: "Basketr exact-product comparison", checkedAt: "8 Sep 2026",
   },
   "peanut butter": {
     unit: "g", pack: 340,
-    stores: { Aldi: 0.95, Asda: 1.80, Tesco: 1.80 },
+    stores: { Aldi: { price: 0.95 }, Asda: { price: 1.80 }, Tesco: { price: 1.80 } },
     source: "Basketr exact-product comparison", checkedAt: "8 Sep 2026",
   },
   honey: {
     unit: "g", pack: 340,
-    stores: { Asda: 2.48, "Sainsbury’s": 3.75, Tesco: 3.00, Morrisons: 3.00 },
+    stores: { Asda: { price: 2.48 }, "Sainsbury’s": { price: 3.75 }, Tesco: { price: 3.00 }, Morrisons: { price: 3.00 } },
     source: "Basketr exact-product comparison", checkedAt: "8 Sep 2026",
   },
 };
@@ -83,7 +83,7 @@ function toBaseAmount(amount, unit, catalogUnit) {
   return value;
 }
 
-export function expandStorePriceMatch(item, fallbackStores = []) {
+export function expandStorePriceMatch(item) {
   const key = normaliseKey(item?.priceMatch?.key || item?.name);
   const catalog = key ? STORE_PRICES[key] : null;
   if (!catalog) return item;
@@ -91,15 +91,16 @@ export function expandStorePriceMatch(item, fallbackStores = []) {
   const required = toBaseAmount(item?.priceMatch?.required ?? item?.amount, item?.priceMatch?.unit ?? item?.unit, catalog.unit);
   if (!Number.isFinite(required)) return item;
 
-  const stores = catalog.stores || {};
-  const offers = Object.entries(stores).map(([store, packPrice]) => {
-    const packs = Math.max(1, Math.ceil(required / catalog.pack));
+  const offers = Object.entries(catalog.stores || {}).map(([store, storeSpec]) => {
+    const pack = Number(storeSpec.pack || catalog.pack);
+    const packPrice = Number(storeSpec.price);
+    const packs = Math.max(1, Math.ceil(required / pack));
     return {
       store,
       packs,
       total: Number((packs * packPrice).toFixed(2)),
       packPrice: Number(packPrice.toFixed(2)),
-      pack: catalog.pack,
+      pack,
       unit: catalog.unit,
       source: catalog.source,
       checkedAt: catalog.checkedAt,
