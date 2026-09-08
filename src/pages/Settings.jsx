@@ -7,7 +7,6 @@ import {
   ChevronRight,
   CircleHelp,
   Database,
-  Eye,
   Footprints,
   Moon,
   Shield,
@@ -38,9 +37,9 @@ const sections = [
   {
     title: "MY SETUP",
     items: [
-      { icon: CalendarDays, title: "Shift Schedule", description: "Change your shift pattern and work days", action: "onboarding" },
-      { icon: Target, title: "Goal & Nutrition", description: "Update goals, calories and macros", action: "onboarding" },
-      { icon: UserRound, title: "Personal Details", description: "Update your personal profile information", action: "profile" },
+      { icon: CalendarDays, title: "Shift Schedule", description: "Change your shift pattern and work days", action: "shift" },
+      { icon: Target, title: "Goal & Nutrition", description: "Update goals, calories and macros", action: "goal" },
+      { icon: UserRound, title: "Personal Details", description: "Update your personal profile information", action: "personal" },
     ],
   },
   {
@@ -63,8 +62,9 @@ export default function Settings() {
   const navigate = useNavigate();
 
   const handleAction = (action) => {
-    if (action === "onboarding") return navigate("/onboarding");
-    if (action === "profile") return navigate("/profile");
+    if (action === "shift") return navigate("/onboarding?from=settings&step=2");
+    if (action === "goal") return navigate("/onboarding?from=settings&step=1");
+    if (action === "personal") return navigate("/onboarding?from=settings&step=0");
     if (action === "stats") return navigate("/stats");
     if (action === "connections") return navigate("/connections");
     if (action === "support") return window.alert("ShiftFit support is coming soon. You can continue using the app while we build the support centre.");
