@@ -52,15 +52,18 @@ export default function Shopping() {
   const matchedItems = pricedItems.filter((item) => item.priceMatch?.offers?.length);
   const unmatchedCount = Math.max(0, items.length - matchedItems.length);
 
+  // A store with fewer matched products cannot honestly be called the cheapest basket.
+  // Rank by coverage first, then use matched subtotal as the tie-breaker.
   const storeTotals = useMemo(() => {
     return STORES.map((store) => {
       const matched = matchedItems.filter((item) => item.priceMatch.offers.some((offer) => offer.store === store));
       const total = matched.reduce((sum, item) => sum + (item.priceMatch.offers.find((offer) => offer.store === store)?.total || 0), 0);
-      return { store, total: Number(total.toFixed(2)), matched: matched.length };
-    }).filter((row) => row.matched > 0).sort((a, b) => a.total - b.total);
+      const coverage = matchedItems.length ? matched.length / matchedItems.length : 0;
+      return { store, total: Number(total.toFixed(2)), matched: matched.length, coverage };
+    }).filter((row) => row.matched > 0).sort((a, b) => b.matched - a.matched || a.total - b.total);
   }, [matchedItems]);
 
-  const cheapest = storeTotals[0];
+  const bestStore = storeTotals[0];
   const groups = useMemo(() => pricedItems.reduce((acc, item) => {
     (acc[item.category || "Other"] ||= []).push(item);
     return acc;
@@ -88,10 +91,10 @@ export default function Shopping() {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <div className="mb-1 flex items-center gap-2 text-primary"><Sparkles className="h-4 w-4" /><span className="text-xs font-bold uppercase tracking-[0.14em]">Price intelligence</span></div>
-                <h2 className="text-lg font-bold">{cheapest ? `Cheapest matched basket: ${cheapest.store}` : "Building your price basket"}</h2>
-                <p className="mt-1 text-xs leading-5 text-muted-foreground">Current public UK price snapshot. We only total ingredients with a product match, so we never invent a price.</p>
+                <h2 className="text-lg font-bold">{bestStore ? `Best current match: ${bestStore.store}` : "Building your price basket"}</h2>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">We rank supermarkets by how much of your matched basket they can cover, then by matched subtotal. Unmatched ingredients are never given an invented price.</p>
               </div>
-              {cheapest && <div className="text-right"><p className="text-2xl font-black text-primary">{money(cheapest.total)}</p><p className="text-[10px] text-muted-foreground">matched subtotal</p></div>}
+              {bestStore && <div className="text-right"><p className="text-2xl font-black text-primary">{money(bestStore.total)}</p><p className="text-[10px] text-muted-foreground">matched subtotal</p></div>}
             </div>
             <div className="mt-4 grid grid-cols-3 gap-2">
               <div className="rounded-xl border border-white/10 bg-black/20 p-3"><p className="text-[10px] uppercase tracking-wider text-muted-foreground">Basket</p><p className="mt-1 font-bold">{items.length}</p></div>
@@ -105,8 +108,8 @@ export default function Shopping() {
             <div className="space-y-2">
               {storeTotals.map((row, index) => (
                 <div key={row.store} className={cn("flex items-center justify-between rounded-xl border p-3", index === 0 ? "border-primary/30 bg-primary/[0.06]" : "border-white/10 bg-black/10")}>
-                  <div className="flex items-center gap-3"><div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/[0.06] text-xs font-black">{index + 1}</div><div><p className="text-sm font-semibold">{row.store}</p><p className="text-[10px] text-muted-foreground">{row.matched}/{matchedItems.length} matched products</p></div></div>
-                  <div className="text-right"><p className="text-sm font-bold">{money(row.total)}</p>{index === 0 && <p className="text-[10px] font-semibold text-primary">Cheapest matched</p>}</div>
+                  <div className="flex items-center gap-3"><div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/[0.06] text-xs font-black">{index + 1}</div><div><p className="text-sm font-semibold">{row.store}</p><p className="text-[10px] text-muted-foreground">{row.matched}/{matchedItems.length} matched products · {Math.round(row.coverage * 100)}% coverage</p></div></div>
+                  <div className="text-right"><p className="text-sm font-bold">{money(row.total)}</p>{index === 0 && <p className="text-[10px] font-semibold text-primary">Best coverage</p>}</div>
                 </div>
               ))}
               {!storeTotals.length && <p className="py-4 text-center text-xs text-muted-foreground">No current product matches yet.</p>}
