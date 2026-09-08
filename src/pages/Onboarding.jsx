@@ -141,7 +141,7 @@ export default function Onboarding() {
         await base44.entities.StepLog.create({ date: today, steps: 0 });
         await base44.entities.BodyMetric.create({ date: today, weight_kg: Number(form.weight_kg) });
       }
-      navigate("/");
+      navigate(existingProfile ? "/profile" : "/");
     } finally {
       setSaving(false);
     }
