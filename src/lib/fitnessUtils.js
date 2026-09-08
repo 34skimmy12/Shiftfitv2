@@ -68,10 +68,10 @@ export function generateMealPlans(profile, targets) {
 export function getMealSwapOptions(plan, mealIndex, profile, limit = 3) {
   const current = plan?.meals?.[mealIndex]; if (!current) return [];
   const likes = normaliseList(profile.food_likes); const avoid = normaliseList(profile.food_avoid);
-  const usedKeys = new Set(plan.meals.map((m) => m.meal_key).filter(Boolean)); usedKeys.delete(current.meal_key);
-  let candidates = candidateMeals(plan.shift_context, current.type, avoid).filter((m) => m.key !== current.meal_key && !usedKeys.has(m.key));
-  if (!candidates.length) candidates = candidateMeals(plan.shift_context, current.type, avoid).filter((m) => m.key !== current.meal_key);
-  const liked = candidates.filter((m) => matchesPreference(m, likes, [])); if (liked.length) candidates = [...liked, ...candidates.filter((m) => !liked.includes(m))];
+  let candidates = candidateMeals(plan.shift_context, current.type, avoid).filter((m) => m.key !== current.meal_key);
+  if (!candidates.length) candidates = MEAL_LIBRARY.filter((m) => m.shifts.includes(plan.shift_context) && m.types.includes(current.type) && m.key !== current.meal_key && !matchesPreference(m, [], avoid));
+  const liked = candidates.filter((m) => matchesPreference(m, likes, []));
+  if (liked.length) candidates = [...liked, ...candidates.filter((m) => !liked.includes(m))];
   return candidates.slice(0, limit).map((m) => ({ key: m.key, name: m.name, items: m.items }));
 }
 
@@ -81,7 +81,14 @@ export function swapMeal(plan, mealIndex, profile, targets, replacementKey = nul
   const usedKeys = new Set(plan.meals.map((m) => m.meal_key).filter(Boolean)); usedKeys.delete(current.meal_key);
   const slot = current.type;
   let replacement = replacementKey ? MEAL_LIBRARY.find((m) => m.key === replacementKey) : null;
-  if (!replacement || !replacement.shifts.includes(plan.shift_context) || !replacement.types.includes(slot) || !matchesPreference(replacement, [], avoid) || usedKeys.has(replacement.key)) replacement = pickMeal(plan.shift_context, slot, plan.day_index, usedKeys, likes, avoid, current.meal_key);
+  if (!replacement || !replacement.shifts.includes(plan.shift_context) || !replacement.types.includes(slot) || !matchesPreference(replacement, [], avoid)) replacement = null;
+  if (!replacement) {
+    let candidates = candidateMeals(plan.shift_context, slot, avoid).filter((m) => m.key !== current.meal_key && !usedKeys.has(m.key));
+    if (!candidates.length) candidates = candidateMeals(plan.shift_context, slot, avoid).filter((m) => m.key !== current.meal_key);
+    const liked = candidates.filter((m) => matchesPreference(m, likes, []));
+    if (liked.length) candidates = [...liked, ...candidates.filter((m) => !liked.includes(m))];
+    replacement = candidates[0];
+  }
   if (!replacement) return plan;
   const baseCalories = plan.meals.reduce((sum, m, idx) => idx === mealIndex ? sum : sum + m.calories, 0);
   const desiredMealCalories = Math.max(150, (targets.calorie_target || plan.total_calories || 2000) - baseCalories);
