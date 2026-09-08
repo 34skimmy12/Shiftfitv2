@@ -15,13 +15,10 @@ export function computeTargets(profile) {
   return { calorie_target: calories, protein_target: protein, carb_target: carbs, fat_target: fat, water_target_ml, step_target };
 }
 export function shiftForWeekday(profile, weekdayIdx) { const day = WEEKDAYS[weekdayIdx]; if (!profile.work_days?.includes(day)) return "rest"; if (profile.shift_pattern === "fixed_night") return "night"; if (profile.shift_pattern === "rotating") return weekdayIdx % 2 === 0 ? "day" : "night"; return "day"; }
-export const SHIFT_META = { day: { label: "Day Shift", color: "text-primary", dot: "bg-primary" }, night: { label: "Night Shift", color: "text-accent", dot: "bg-accent" }, rest: { label: "Rest Day", color: "text-muted-foreground", dot: "bg-muted-foreground" } };
+export const SHIFT_META = { day: { label: "Day Shift", color: "text-primary", dot: "bg-primary" }, night: { label: "Night Shift", color: "text-accent", dot: "bg-accent" } };
 
 const WORKOUT_TEMPLATES = {
-  day: [
-    { title: "Upper Body Power", focus: "Chest, Back, Shoulders", duration_min: 50, intensity: "high", exercises: [{ name: "Barbell Bench Press", sets: 4, reps: "6-8", rest_sec: 120, notes: "Keep shoulders retracted" }, { name: "Bent-Over Row", sets: 4, reps: "8-10", rest_sec: 90, notes: "Squeeze at top" }, { name: "Overhead Press", sets: 3, reps: "8-10", rest_sec: 90, notes: "Brace core" }, { name: "Lat Pulldown", sets: 3, reps: "10-12", rest_sec: 75, notes: "" }, { name: "Dumbbell Curl", sets: 3, reps: "12", rest_sec: 60, notes: "" }, { name: "Tricep Pushdown", sets: 3, reps: "12", rest_sec: 60, notes: "" }] },
-    { title: "Lower Body Strength", focus: "Quads, Hamstrings, Glutes", duration_min: 55, intensity: "high", exercises: [{ name: "Barbell Squat", sets: 4, reps: "6-8", rest_sec: 150, notes: "Depth to parallel" }, { name: "Romanian Deadlift", sets: 4, reps: "8-10", rest_sec: 120, notes: "Hinge at hips" }, { name: "Leg Press", sets: 3, reps: "10-12", rest_sec: 90, notes: "" }, { name: "Walking Lunges", sets: 3, reps: "12/leg", rest_sec: 75, notes: "" }, { name: "Calf Raises", sets: 4, reps: "15", rest_sec: 45, notes: "" }] }
-  ],
+  day: [{ title: "Upper Body Power", focus: "Chest, Back, Shoulders", duration_min: 50, intensity: "high", exercises: [{ name: "Barbell Bench Press", sets: 4, reps: "6-8", rest_sec: 120, notes: "Keep shoulders retracted" }, { name: "Bent-Over Row", sets: 4, reps: "8-10", rest_sec: 90, notes: "Squeeze at top" }, { name: "Overhead Press", sets: 3, reps: "8-10", rest_sec: 90, notes: "Brace core" }, { name: "Lat Pulldown", sets: 3, reps: "10-12", rest_sec: 75, notes: "" }, { name: "Dumbbell Curl", sets: 3, reps: "12", rest_sec: 60, notes: "" }, { name: "Tricep Pushdown", sets: 3, reps: "12", rest_sec: 60, notes: "" }] }, { title: "Lower Body Strength", focus: "Quads, Hamstrings, Glutes", duration_min: 55, intensity: "high", exercises: [{ name: "Barbell Squat", sets: 4, reps: "6-8", rest_sec: 150, notes: "Depth to parallel" }, { name: "Romanian Deadlift", sets: 4, reps: "8-10", rest_sec: 120, notes: "Hinge at hips" }, { name: "Leg Press", sets: 3, reps: "10-12", rest_sec: 90, notes: "" }, { name: "Walking Lunges", sets: 3, reps: "12/leg", rest_sec: 75, notes: "" }, { name: "Calf Raises", sets: 4, reps: "15", rest_sec: 45, notes: "" }] }],
   night: [{ title: "Night Shift Maintenance", focus: "Full Body — Moderate", duration_min: 30, intensity: "moderate", exercises: [{ name: "Goblet Squat", sets: 3, reps: "10", rest_sec: 75, notes: "Keep torso upright" }, { name: "Dumbbell Row", sets: 3, reps: "12", rest_sec: 60, notes: "" }, { name: "Push-Up", sets: 3, reps: "AMRAP", rest_sec: 60, notes: "Quality over quantity" }, { name: "Plank", sets: 3, reps: "45s", rest_sec: 45, notes: "Brace hard" }, { name: "Kettlebell Swing", sets: 3, reps: "15", rest_sec: 60, notes: "Hip drive" }] }],
   rest: [{ title: "Active Recovery", focus: "Mobility & Light Cardio", duration_min: 25, intensity: "low", exercises: [{ name: "Foam Rolling", sets: 1, reps: "10 min", rest_sec: 0, notes: "Focus on tight areas" }, { name: "Hip Mobility Flow", sets: 1, reps: "8 min", rest_sec: 0, notes: "90/90 transitions" }, { name: "Brisk Walk", sets: 1, reps: "15 min", rest_sec: 0, notes: "Zone 2 — easy pace" }, { name: "Deep Stretching", sets: 1, reps: "10 min", rest_sec: 0, notes: "Hold 30s each" }] }]
 };
@@ -68,15 +65,23 @@ export function generateMealPlans(profile, targets) {
   return plans;
 }
 
-// Swap a single meal without rebuilding the rest of the week. The replacement keeps
-// the same shift/meal slot and avoids the current meal, the user's avoid list, and
-// already-used meals on that day. It is also scaled to the same day's calorie target.
-export function swapMeal(plan, mealIndex, profile, targets) {
+export function getMealSwapOptions(plan, mealIndex, profile, limit = 3) {
+  const current = plan?.meals?.[mealIndex]; if (!current) return [];
+  const likes = normaliseList(profile.food_likes); const avoid = normaliseList(profile.food_avoid);
+  const usedKeys = new Set(plan.meals.map((m) => m.meal_key).filter(Boolean)); usedKeys.delete(current.meal_key);
+  let candidates = candidateMeals(plan.shift_context, current.type, avoid).filter((m) => m.key !== current.meal_key && !usedKeys.has(m.key));
+  if (!candidates.length) candidates = candidateMeals(plan.shift_context, current.type, avoid).filter((m) => m.key !== current.meal_key);
+  const liked = candidates.filter((m) => matchesPreference(m, likes, [])); if (liked.length) candidates = [...liked, ...candidates.filter((m) => !liked.includes(m))];
+  return candidates.slice(0, limit).map((m) => ({ key: m.key, name: m.name, items: m.items }));
+}
+
+export function swapMeal(plan, mealIndex, profile, targets, replacementKey = null) {
   if (!plan?.meals?.[mealIndex]) return plan;
   const likes = normaliseList(profile.food_likes); const avoid = normaliseList(profile.food_avoid); const current = plan.meals[mealIndex];
-  const usedKeys = new Set(plan.meals.map((m) => m.meal_key).filter(Boolean));
-  usedKeys.delete(current.meal_key);
-  const slot = current.type; const replacement = pickMeal(plan.shift_context, slot, plan.day_index, usedKeys, likes, avoid, current.meal_key);
+  const usedKeys = new Set(plan.meals.map((m) => m.meal_key).filter(Boolean)); usedKeys.delete(current.meal_key);
+  const slot = current.type;
+  let replacement = replacementKey ? MEAL_LIBRARY.find((m) => m.key === replacementKey) : null;
+  if (!replacement || !replacement.shifts.includes(plan.shift_context) || !replacement.types.includes(slot) || !matchesPreference(replacement, [], avoid) || usedKeys.has(replacement.key)) replacement = pickMeal(plan.shift_context, slot, plan.day_index, usedKeys, likes, avoid, current.meal_key);
   if (!replacement) return plan;
   const baseCalories = plan.meals.reduce((sum, m, idx) => idx === mealIndex ? sum : sum + m.calories, 0);
   const desiredMealCalories = Math.max(150, (targets.calorie_target || plan.total_calories || 2000) - baseCalories);
