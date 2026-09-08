@@ -9,6 +9,7 @@ import Onboarding from "@/pages/Onboarding";
 import Calendar from "@/pages/Calendar";
 import Shopping from "@/pages/Shopping";
 import Profile from "@/pages/Profile";
+import Connections from "@/pages/Connections";
 import Auth from "@/pages/Auth";
 import AuthGate from "@/components/AuthGate";
 
@@ -22,6 +23,7 @@ export default function App() {
     <Route path="/login" element={<Auth />} />
     <Route path="/onboarding" element={<Protected><Onboarding /></Protected>} />
     <Route path="/profile" element={<Protected><Profile /></Protected>} />
+    <Route path="/connections" element={<Protected><Connections /></Protected>} />
     <Route path="/calendar" element={<Protected><Calendar /></Protected>} />
     <Route path="/train" element={<Protected><Workouts /></Protected>} />
     <Route path="/fuel" element={<Protected><Nutrition /></Protected>} />
