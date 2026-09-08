@@ -1,9 +1,8 @@
-// Complete the final small-volume price gaps in the Smart Basket.
-// These conversions use standard kitchen measures so a verified pack price
-// can still be calculated when the meal ingredient is recorded as tsp/tbsp.
+// Complete small-volume price gaps in the Smart Basket.
+// Kitchen-measure conversions let tsp/tbsp ingredients use a verified pack price.
 const PRICE_COMPLETIONS = {
   "olive oil": { unit: "ml", pack: 500, packPrice: 5.75, source: "Tesco public product price", toBase: (amount, unit) => unit === "tbsp" ? amount * 15 : unit === "tsp" ? amount * 5 : null },
-  "sesame oil": { unit: "ml", pack: 250, packPrice: 2.50, source: "Tesco public product price", toBase: (amount, unit) => unit === "tbsp" ? amount * 15 : unit === "tsp" ? amount * 5 : null },
+  "sesame oil": { unit: "ml", pack: 250, packPrice: 2.65, source: "Current public supermarket price comparison", toBase: (amount, unit) => unit === "tbsp" ? amount * 15 : unit === "tsp" ? amount * 5 : null },
   honey: { unit: "g", pack: 340, packPrice: 1.19, source: "Tesco public product price", toBase: (amount, unit) => unit === "tbsp" ? amount * 15 : unit === "tsp" ? amount * 5 : null },
 };
 
@@ -24,6 +23,6 @@ export function completePriceMatch(item) {
   if (!Number.isFinite(required)) return item;
   const packs = Math.max(1, Math.ceil(required / catalog.pack));
   const total = Number((packs * catalog.packPrice).toFixed(2));
-  const offer = { store: "Tesco", packs, total, packPrice: catalog.packPrice, pack: catalog.pack, unit: catalog.unit };
-  return { ...item, priceMatch: { key, required, offers: [offer], cheapest: offer, source: catalog.source, checkedAt: "8 Sep 2026" } };
+  const offer = { store: "Tesco", packs, total, packPrice: catalog.packPrice, pack: catalog.pack, unit: catalog.unit, source: catalog.source, checkedAt: "8 Sep 2026" };
+  return { ...item, priceMatch: { key, required, offers: [offer], cheapest: offer, productMatch: true, source: catalog.source, checkedAt: "8 Sep 2026" } };
 }
