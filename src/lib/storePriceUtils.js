@@ -72,11 +72,26 @@ function normaliseKey(value) {
   return found ? found[1] : null;
 }
 
-function toBaseAmount(amount, unit, catalogUnit) {
+function toBaseAmount(amount, unit, catalogUnit, catalogPack) {
   const value = Number(amount); if (!Number.isFinite(value)) return null;
   const u = String(unit || "").toLowerCase();
-  if (catalogUnit === "g") { if (u === "kg") return value * 1000; if (u === "g") return value; return null; }
-  if (catalogUnit === "ml") { if (u === "l") return value * 1000; if (u === "ml") return value; if (u === "tbsp") return value * 15; if (u === "tsp") return value * 5; return null; }
+  if (catalogUnit === "g") {
+    if (u === "kg") return value * 1000;
+    if (u === "g") return value;
+    // Shopping-list produce is intentionally stored as portions where one
+    // portion represents one purchasable pack. Convert it to the catalog pack
+    // size so verified pack prices can be used instead of showing Price pending.
+    if (u === "portion") return value * Number(catalogPack || 1);
+    return null;
+  }
+  if (catalogUnit === "ml") {
+    if (u === "l") return value * 1000;
+    if (u === "ml") return value;
+    if (u === "tbsp") return value * 15;
+    if (u === "tsp") return value * 5;
+    if (u === "portion") return value * Number(catalogPack || 1);
+    return null;
+  }
   if (["egg","each","wrap","slice"].includes(catalogUnit)) return value;
   return value;
 }
@@ -85,7 +100,7 @@ export function expandStorePriceMatch(item) {
   const key = normaliseKey(item?.priceMatch?.key || item?.name);
   const catalog = key ? STORE_PRICES[key] : null;
   if (!catalog) return item;
-  const required = toBaseAmount(item?.priceMatch?.required ?? item?.amount, item?.priceMatch?.unit ?? item?.unit, catalog.unit);
+  const required = toBaseAmount(item?.priceMatch?.required ?? item?.amount, item?.priceMatch?.unit ?? item?.unit, catalog.unit, catalog.pack);
   if (!Number.isFinite(required)) return item;
   const offers = Object.entries(catalog.stores || {}).map(([store,spec]) => {
     const pack = Number(spec.pack || catalog.pack); const packPrice = Number(spec.price); const packs = Math.max(1, Math.ceil(required / pack));
