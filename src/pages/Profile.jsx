@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { computeTargets, generateMealPlans, generateShoppingList, generateWorkoutPlans } from "@/lib/fitnessUtils";
-import { ArrowLeft, Save, RefreshCw, UserRound, Target, Clock3, LogOut } from "lucide-react";
+import { ArrowLeft, Save, RefreshCw, UserRound, Target, Clock3, LogOut, Settings2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const GOALS = [
@@ -79,7 +79,14 @@ export default function Profile() {
   };
 
   return <AppLayout>
-    <div className="mb-5 flex items-center gap-3"><button onClick={() => navigate(-1)} className="flex h-9 w-9 items-center justify-center rounded-xl bg-secondary"><ArrowLeft className="h-4 w-4" /></button><div><h1 className="text-xl font-bold">Profile</h1><p className="text-xs text-muted-foreground">Control your ShiftFit plan</p></div></div>
+    <div className="mb-5 flex items-center gap-3"><button onClick={() => navigate(-1)} className="flex h-9 w-9 items-center justify-center rounded-xl bg-secondary"><ArrowLeft className="h-4 w-4" /></button><div className="flex-1"><h1 className="text-xl font-bold">Profile</h1><p className="text-xs text-muted-foreground">Control your ShiftFit plan</p></div></div>
+
+    <button type="button" onClick={() => navigate("/onboarding")} className="mb-4 flex w-full items-center gap-3 rounded-2xl border border-primary/25 bg-primary/5 p-4 text-left transition-colors hover:bg-primary/10">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Settings2 className="h-5 w-5" /></div>
+      <div className="min-w-0 flex-1"><div className="text-sm font-bold">Edit onboarding & plan setup</div><div className="mt-1 text-xs text-muted-foreground">Change your goal, shifts, start date, training and personal details.</div></div>
+      <span className="text-sm font-semibold text-primary">Edit</span>
+    </button>
+
     <Section icon={UserRound} title="Personal details" subtitle="These drive your calorie and recovery targets.">
       <Field label="Name" value={form.full_name || ""} onChange={(v) => set("full_name", v)} />
       <div className="grid grid-cols-2 gap-3"><Field label="Age" type="number" value={form.age || ""} onChange={(v) => set("age", v)} /><Field label="Sex" select value={form.sex || "male"} options={["male", "female", "other"]} onChange={(v) => set("sex", v)} /></div>
@@ -103,5 +110,4 @@ export default function Profile() {
 
 function Section({ icon: Icon, title, subtitle, children }) { return <section className="mb-4 rounded-2xl border border-border bg-card p-4"><div className="mb-4 flex items-center gap-3"><div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary"><Icon className="h-4 w-4" /></div><div><h2 className="text-sm font-bold">{title}</h2><p className="text-[11px] text-muted-foreground">{subtitle}</p></div></div><div className="space-y-4">{children}</div></section>; }
 function Field({ label, value, onChange, type = "text", select, options = [] }) { return <div><Label>{label}</Label>{select ? <select className="mt-2 flex h-10 w-full rounded-xl border border-input bg-secondary px-3 text-sm" value={value} onChange={(e) => onChange(e.target.value)}>{options.map((x) => <option key={x} value={x}>{x.replaceAll("_", " ")}</option>)}</select> : <Input className="mt-2" type={type} value={value} onChange={(e) => onChange(e.target.value)} />}</div>; }
-function Splash() { return <div className="flex min-h-screen items-center justify-center bg-background"><div className="h-8 w-8 animate-spin rounded-full border-2 border-secondary border-t-primary" /></div>;
-}
+function Splash() { return <div className="flex min-h-screen items-center justify-center bg-background"><div className="h-8 w-8 animate-spin rounded-full border-2 border-secondary border-t-primary" /></div>; }
