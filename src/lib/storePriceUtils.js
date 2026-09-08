@@ -13,7 +13,7 @@ const STORE_PRICES = {
   "turkey slices": { unit:"g", pack:100, stores:{ Aldi:{price:1.79,pack:100}, Lidl:{price:1.79,pack:100}, Asda:{price:1.80,pack:100}, "Sainsbury’s":{price:2.00,pack:100}, Tesco:{price:1.90,pack:100}, Morrisons:{price:1.90,pack:100} } },
   "smoked salmon": { unit:"g", pack:100, stores:{ Aldi:{price:2.99,pack:100}, Lidl:{price:3.29,pack:100}, Asda:{price:3.50,pack:100}, "Sainsbury’s":{price:3.50,pack:100}, Tesco:{price:3.80,pack:100}, Morrisons:{price:3.50,pack:100} } },
   eggs: { unit:"egg", pack:6, stores:{ Aldi:{price:0.99}, Lidl:{price:1.29}, Asda:{price:1.75}, "Sainsbury’s":{price:1.80}, Tesco:{price:1.80}, Morrisons:{price:1.80} } },
-  "whey protein": { unit:"g", pack:1000, stores:{ Aldi:{price:19.99,pack:500}, Lidl:{price:19.99,pack:500}, Asda:{price:24.00,pack:1000}, "Sainsbury’s":{price:25.00,pack:1000}, Tesco:{price:25.00,pack:1000}, Morrisons:{price:24.00,pack:1000} } },
+  "whey protein": { unit:"g", pack:1000, stores:{ Asda:{price:25.00,pack:465}, "Sainsbury’s":{price:26.25,pack:1000}, Tesco:{price:30.00,pack:1000} } },
   "greek yogurt": { unit:"g", pack:500, stores:{ Aldi:{price:1.09,pack:500}, Lidl:{price:1.09,pack:500}, Asda:{price:0.95}, "Sainsbury’s":{price:0.95}, Tesco:{price:0.95}, Morrisons:{price:0.80}, Iceland:{price:1.00} } },
   "cottage cheese": { unit:"g", pack:300, stores:{ Aldi:{price:0.89,pack:300}, Lidl:{price:0.99,pack:300}, Asda:{price:0.87}, "Sainsbury’s":{price:0.90,pack:300}, Tesco:{price:0.85}, Morrisons:{price:0.85} } },
   skyr: { unit:"g", pack:450, stores:{ Aldi:{price:1.49,pack:450}, Lidl:{price:1.49,pack:450}, Asda:{price:1.50}, "Sainsbury’s":{price:1.25}, Tesco:{price:2.50}, Morrisons:{price:2.50} } },
@@ -46,7 +46,7 @@ const STORE_PRICES = {
   "pumpkin seeds": { unit:"g", pack:150, stores:{ Aldi:{price:1.49,pack:200}, Lidl:{price:1.49,pack:200}, Asda:{price:1.80,pack:200}, "Sainsbury’s":{price:1.80,pack:200}, Tesco:{price:1.80,pack:150}, Morrisons:{price:1.80,pack:200} } },
   "sesame oil": { unit:"ml", pack:250, stores:{ Aldi:{price:2.49,pack:250}, Lidl:{price:2.49,pack:250}, Asda:{price:2.50,pack:250}, "Sainsbury’s":{price:2.50,pack:250}, Tesco:{price:2.65,pack:250}, Morrisons:{price:2.50,pack:250} } },
   "olive oil": { unit:"ml", pack:500, stores:{ Aldi:{price:4.49,pack:500}, Lidl:{price:5.99,pack:500}, Asda:{price:4.30,pack:500}, "Sainsbury’s":{price:4.65,pack:500}, Tesco:{price:4.75,pack:500}, Morrisons:{price:6.00,pack:500} } },
-  honey: { unit:"g", pack:340, stores:{ Aldi:{price:0.99,pack:454}, Asda:{price:0.74,pack:340}, "Sainsbury’s":{price:1.04,pack:340}, Tesco:{price:1.19,pack:340}, Morrisons:{price:1.25,pack:454} } },
+  honey: { unit:"g", pack:340, stores:{ Aldi:{price:0.99,pack:454}, Asda:{price:0.74,pack:340}, "Sainsbury’s":{price:1.04,pack:340}, Tesco:{price:1.19,pack:340}, Morrisons:{price:1.95,pack:454} } },
   hummus: { unit:"g", pack:200, stores:{ Aldi:{price:1.19,pack:200}, Lidl:{price:1.19,pack:200}, Asda:{price:1.20,pack:200}, "Sainsbury’s":{price:1.20,pack:200}, Tesco:{price:1.30,pack:200}, Morrisons:{price:1.20,pack:200} } },
 };
 
