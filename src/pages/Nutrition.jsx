@@ -4,7 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { useProfile } from "@/hooks/useProfile";
 import AppLayout from "@/components/AppLayout";
 import ShiftBadge from "@/components/ShiftBadge";
-import { weekdayOf, WEEKDAY_LABELS, todayStr, swapMeal, getMealSwapOptions, generateShoppingList, computeTargets } from "@/lib/fitnessUtils";
+import { weekdayOf, WEEKDAY_LABELS, todayStr, swapMeal, getMealSwapOptions, generateMealPlans, generateShoppingList, computeTargets } from "@/lib/fitnessUtils";
 import { Droplets, Plus, Minus, ShoppingCart, Check, Flame, Beef, Wheat, RefreshCw, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -26,7 +26,23 @@ export default function Nutrition() {
   const loadData = async () => {
     if (!profile) return;
     const [mealPlans, waterLogs, basket] = await Promise.all([base44.entities.MealPlan.list(), base44.entities.WaterLog.filter({ date: today }), base44.entities.ShoppingListItem.list()]);
-    const sorted = [...mealPlans].sort((a, b) => a.day_index - b.day_index);
+    let sorted = [...mealPlans].sort((a, b) => a.day_index - b.day_index);
+
+    // Migrate legacy meal plans automatically. The current generator adds meal_key;
+    // older persisted plans do not have it, which can make the swap engine appear empty.
+    const needsMigration = sorted.length !== 7 || sorted.some((p) => !Array.isArray(p.meals) || p.meals.length === 0 || p.meals.some((m) => !m.meal_key));
+    if (needsMigration) {
+      const targets = computeTargets(profile);
+      const freshPlans = generateMealPlans({ ...profile, ...targets }, targets);
+      await Promise.all(sorted.map((p) => base44.entities.MealPlan.delete(p.id)));
+      sorted = freshPlans.length ? await base44.entities.MealPlan.bulkCreate(freshPlans) : [];
+      sorted = [...sorted].sort((a, b) => a.day_index - b.day_index);
+      const freshBasket = generateShoppingList(sorted);
+      const existingBasket = await base44.entities.ShoppingListItem.list();
+      await Promise.all(existingBasket.map((item) => base44.entities.ShoppingListItem.delete(item.id)));
+      basket.splice(0, basket.length, ...(freshBasket.length ? await base44.entities.ShoppingListItem.bulkCreate(freshBasket) : []));
+    }
+
     setPlans(sorted);
     setActiveDay((current) => sorted.some((p) => p.day_index === current) ? current : wdIdx);
     setWater(waterLogs[0]?.amount_ml || 0);
