@@ -19,7 +19,7 @@ function singularise(value) {
   const lower = text.toLowerCase();
   const aliases = {
     egg: "eggs", eggs: "eggs", berry: "mixed berries", berries: "mixed berries",
-    chicken: "chicken breast", "chicken breast": "chicken breast",
+    chicken: "chicken breast", "chicken breast": "chicken breast", "lean chicken": "chicken breast",
     "lean beef": "beef mince", "beef mince": "beef mince",
     "spinach leaves": "spinach", "salad leaves": "salad leaves",
     "mixed stir-fry vegetables": "mixed stir-fry vegetables", "mixed vegetables": "mixed vegetables",
@@ -80,33 +80,99 @@ function categoryFor(name) {
   return "Other";
 }
 
-// Current UK public-price snapshot gathered 8 Sep 2026. These are indicative
-// own-brand/unit-price matches, not guaranteed store checkout totals.
+// UK public-price snapshot refreshed 8 Sep 2026. Prices are indicative public
+// pack prices, not guaranteed checkout totals; loyalty/promotional prices may differ.
 const PRICE_CATALOG = {
-  "chicken breast": { unit: "g", pack: 1000, stores: { Aldi: 4.25, Asda: 5.20, Morrisons: 4.25, "Sainsbury’s": 5.00, Tesco: 6.69 }, source: "Aldi/UK price comparison snapshot" },
-  "turkey mince": { unit: "g", pack: 500, stores: { Aldi: 2.99, "Sainsbury’s": 3.95, Tesco: 4.40 }, source: "Aldi and current supermarket comparison snapshot" },
-  "greek yogurt": { unit: "g", pack: 1000, stores: { Aldi: 1.49, Asda: 1.90, Tesco: 1.70 }, source: "Current UK supermarket comparison snapshot" },
-  oats: { unit: "g", pack: 1000, stores: { Aldi: 0.85, Asda: 0.85, Tesco: 0.85 }, source: "Current UK supermarket comparison snapshot" },
-  salmon: { unit: "g", pack: 350, stores: { Aldi: 4.19, Asda: 4.19 }, source: "Current UK salmon comparison snapshot" },
-  "beef mince": { unit: "g", pack: 500, stores: { Tesco: 2.40, Iceland: 2.50, "Sainsbury’s": 3.09, Asda: 3.25, Morrisons: 5.05 }, source: "Current UK supermarket comparison snapshot" },
-  eggs: { unit: "egg", pack: 6, stores: { Aldi: 0.99, Asda: 1.75, Morrisons: 1.80, "Sainsbury’s": 1.80, Tesco: 1.80 }, source: "Current UK supermarket comparison snapshot" },
-  milk: { unit: "ml", pack: 1136, stores: { Aldi: 1.20, Asda: 1.20, Morrisons: 1.20, "Sainsbury’s": 1.20, Tesco: 1.20 }, source: "Current UK supermarket comparison snapshot" },
-  "basmati rice": { unit: "g", pack: 1000, stores: { Morrisons: 1.79, "Sainsbury’s": 1.79, Tesco: 1.79, Asda: 1.80, Iceland: 2.00 }, source: "Current UK supermarket comparison snapshot" },
-  avocado: { unit: "portion", pack: 1, stores: { Tesco: 0.69 }, source: "Tesco current public grocery price" },
+  "chicken breast": { unit: "g", pack: 1000, stores: { Aldi: 4.25, Asda: 5.20, Morrisons: 4.25, "Sainsbury’s": 5.00, Tesco: 6.69 }, source: "Current UK supermarket public price snapshot" },
+  "turkey mince": { unit: "g", pack: 500, stores: { Aldi: 2.99, "Sainsbury’s": 3.95, Tesco: 4.40 }, source: "Current UK supermarket public price snapshot" },
+  "turkey slices": { unit: "g", pack: 100, stores: { Tesco: 1.90 }, source: "Tesco public product price" },
+  "greek yogurt": { unit: "g", pack: 1000, stores: { Aldi: 1.49, Asda: 1.90, Tesco: 1.70 }, source: "Current UK supermarket public price snapshot" },
+  skyr: { unit: "g", pack: 450, stores: { Tesco: 2.50 }, source: "Tesco public product price" },
+  oats: { unit: "g", pack: 1000, stores: { Aldi: 0.85, Asda: 0.85, Tesco: 0.85 }, source: "Current UK supermarket public price snapshot" },
+  salmon: { unit: "g", pack: 350, stores: { Aldi: 4.19, Asda: 4.19, Tesco: 5.95 }, source: "Current UK supermarket public price snapshot" },
+  "smoked salmon": { unit: "g", pack: 100, stores: { Tesco: 3.80 }, source: "Tesco public product price" },
+  "beef mince": { unit: "g", pack: 500, stores: { Tesco: 2.40, Iceland: 2.50, "Sainsbury’s": 3.09, Asda: 3.25, Morrisons: 5.05 }, source: "Current UK supermarket public price snapshot" },
+  eggs: { unit: "egg", pack: 6, stores: { Aldi: 0.99, Asda: 1.75, Morrisons: 1.80, "Sainsbury’s": 1.80, Tesco: 1.80 }, source: "Current UK supermarket public price snapshot" },
+  milk: { unit: "ml", pack: 1136, stores: { Aldi: 1.20, Asda: 1.20, Morrisons: 1.20, "Sainsbury’s": 1.20, Tesco: 1.20 }, source: "Current UK supermarket public price snapshot" },
+  "brown rice": { unit: "g", pack: 1000, stores: { Tesco: 1.39 }, source: "Tesco public product price" },
+  "basmati rice": { unit: "g", pack: 1000, stores: { Morrisons: 1.79, "Sainsbury’s": 1.79, Tesco: 1.79, Asda: 1.80, Iceland: 2.00 }, source: "Current UK supermarket public price snapshot" },
+  avocado: { unit: "portion", pack: 1, stores: { Tesco: 0.69 }, source: "Tesco public grocery price" },
+  "cottage cheese": { unit: "g", pack: 300, stores: { Tesco: 0.85 }, source: "Tesco public product price" },
+  spinach: { unit: "portion", pack: 1, stores: { Tesco: 1.77 }, source: "Tesco public product price; 500g pack" },
+  broccoli: { unit: "portion", pack: 1, stores: { Tesco: 0.90 }, source: "Tesco public product price; 375g pack" },
+  "sweet potato": { unit: "g", pack: 1000, stores: { Tesco: 1.19 }, source: "Tesco public product price" },
+  "baby potatoes": { unit: "g", pack: 2000, stores: { Tesco: 1.32 }, source: "Tesco public product price; 2kg potatoes family" },
+  potatoes: { unit: "g", pack: 2000, stores: { Tesco: 1.32 }, source: "Tesco public product price" },
+  quinoa: { unit: "g", pack: 300, stores: { Tesco: 3.10 }, source: "Tesco public product price" },
+  "green beans": { unit: "portion", pack: 1, stores: { Tesco: 0.85 }, source: "Tesco public product price; 220g pack" },
+  tuna: { unit: "g", pack: 110, stores: { Tesco: 1.40 }, source: "Tesco public product price snapshot" },
+  cod: { unit: "g", pack: 280, stores: { Tesco: 8.15 }, source: "Tesco public product price; Clubcard price may differ" },
+  "mixed berries": { unit: "g", pack: 1000, stores: { Tesco: 2.99 }, source: "Tesco public product price" },
+  almonds: { unit: "g", pack: 250, stores: { Tesco: 2.75 }, source: "Tesco public product price" },
+  "olive oil": { unit: "ml", pack: 500, stores: { Tesco: 5.75 }, source: "Tesco public product price" },
+  "sesame oil": { unit: "ml", pack: 250, stores: { Tesco: 2.65 }, source: "Current UK public supermarket price comparison" },
+  "chia seeds": { unit: "g", pack: 150, stores: { Tesco: 1.80 }, source: "Tesco public product price" },
+  "pumpkin seeds": { unit: "g", pack: 150, stores: { Tesco: 1.80 }, source: "Tesco public product price" },
+  banana: { unit: "portion", pack: 1, stores: { Tesco: 0.16 }, source: "Tesco public grocery price; loose banana" },
+  pear: { unit: "portion", pack: 1, stores: { Tesco: 0.46 }, source: "Tesco public grocery price; derived from 4-pack public price" },
+  apple: { unit: "portion", pack: 1, stores: { Tesco: 0.36 }, source: "Tesco public grocery price; derived from 5-pack public price" },
+  "wholegrain toast": { unit: "slice", pack: 16, stores: { Tesco: 0.75 }, source: "Tesco public product price; 800g wholemeal bread" },
+  "wholegrain wrap": { unit: "portion", pack: 8, stores: { Tesco: 1.40 }, source: "Tesco public product price; 8 pack" },
+  hummus: { unit: "g", pack: 200, stores: { Tesco: 1.30 }, source: "Tesco public product price" },
+  "salad leaves": { unit: "portion", pack: 1, stores: { Tesco: 1.20 }, source: "Tesco public product price; 120g mixed leaf salad" },
+  tomato: { unit: "portion", pack: 1, stores: { Tesco: 0.99 }, source: "Tesco public product price; 6-pack" },
+  "mixed vegetables": { unit: "portion", pack: 1, stores: { Tesco: 1.65 }, source: "Tesco public product price; 1kg pack" },
+  "mixed stir-fry vegetables": { unit: "portion", pack: 1, stores: { Tesco: 1.50 }, source: "Current UK public supermarket product price" },
+  "peppers & onion": { unit: "portion", pack: 1, stores: { Tesco: 1.50 }, source: "Current UK public supermarket product snapshot" },
+  "peanut butter": { unit: "g", pack: 340, stores: { Tesco: 1.80 }, source: "Tesco public product price" },
+  honey: { unit: "portion", pack: 1, stores: { Tesco: 0.99 }, source: "Tesco public product price; 340g honey pack" },
+  "whey protein": { unit: "scoop", pack: 20, stores: { Tesco: 25.00 }, source: "Tesco public protein powder price snapshot; pack-size normalised to 20 servings" },
 };
 
 function priceKey(name) {
   const n = cleanName(name).toLowerCase();
-  if (n.includes("chicken breast")) return "chicken breast";
-  if (n.includes("turkey")) return "turkey mince";
-  if (n.includes("greek yogurt")) return "greek yogurt";
-  if (n === "oats" || n.includes("oats")) return "oats";
+  if (n.includes("smoked salmon")) return "smoked salmon";
   if (n.includes("salmon")) return "salmon";
+  if (n.includes("turkey slices") || n.includes("turkey breast")) return "turkey slices";
+  if (n.includes("turkey")) return "turkey mince";
+  if (n.includes("chicken breast") || n === "chicken") return "chicken breast";
+  if (n.includes("greek yogurt")) return "greek yogurt";
+  if (n.includes("skyr")) return "skyr";
+  if (n.includes("cottage cheese")) return "cottage cheese";
+  if (n.includes("whey")) return "whey protein";
+  if (n === "oats" || n.includes("oats")) return "oats";
   if (n.includes("beef") && n.includes("mince")) return "beef mince";
-  if (n === "eggs") return "eggs";
+  if (n === "eggs" || n === "egg") return "eggs";
   if (n === "milk") return "milk";
+  if (n.includes("brown rice")) return "brown rice";
   if (n.includes("basmati rice") || n === "rice") return "basmati rice";
   if (n.includes("avocado")) return "avocado";
+  if (n.includes("sweet potato")) return "sweet potato";
+  if (n.includes("baby potato")) return "baby potatoes";
+  if (n === "potatoes" || n.includes("potato")) return "potatoes";
+  if (n.includes("quinoa")) return "quinoa";
+  if (n.includes("green beans")) return "green beans";
+  if (n.includes("tuna")) return "tuna";
+  if (n.includes("cod")) return "cod";
+  if (n.includes("berry") || n.includes("berries")) return "mixed berries";
+  if (n.includes("almond")) return "almonds";
+  if (n.includes("olive oil")) return "olive oil";
+  if (n.includes("sesame oil")) return "sesame oil";
+  if (n.includes("chia")) return "chia seeds";
+  if (n.includes("pumpkin seed")) return "pumpkin seeds";
+  if (n === "banana") return "banana";
+  if (n === "pear") return "pear";
+  if (n === "apple") return "apple";
+  if (n.includes("wholegrain toast") || n.includes("wholegrain bread") || n === "toast") return "wholegrain toast";
+  if (n.includes("wholegrain wrap") || n === "wrap") return "wholegrain wrap";
+  if (n.includes("hummus") || n.includes("houmous")) return "hummus";
+  if (n.includes("salad leaves")) return "salad leaves";
+  if (n === "tomato" || n.includes("tomato")) return "tomato";
+  if (n.includes("stir-fry")) return "mixed stir-fry vegetables";
+  if (n.includes("mixed vegetables")) return "mixed vegetables";
+  if (n.includes("peppers") && n.includes("onion")) return "peppers & onion";
+  if (n.includes("peanut butter")) return "peanut butter";
+  if (n.includes("honey")) return "honey";
   return null;
 }
 
@@ -115,7 +181,11 @@ function quantityInCatalogUnits(item, catalog) {
   if (catalog.unit === "g" && item.unit === "g") return item.amount;
   if (catalog.unit === "ml" && item.unit === "l") return item.amount * 1000;
   if (catalog.unit === "ml" && item.unit === "ml") return item.amount;
+  if (catalog.unit === "ml" && item.unit === "tbsp") return item.amount * 15;
+  if (catalog.unit === "ml" && item.unit === "tsp") return item.amount * 5;
   if (catalog.unit === "egg" && item.unit === "egg") return item.amount;
+  if (catalog.unit === "slice" && item.unit === "slice") return item.amount;
+  if (catalog.unit === "scoop" && item.unit === "scoop") return item.amount;
   if (catalog.unit === "portion" && item.unit === "portion") return item.amount;
   return null;
 }
