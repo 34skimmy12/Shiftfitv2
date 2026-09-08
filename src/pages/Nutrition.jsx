@@ -27,9 +27,6 @@ export default function Nutrition() {
     if (!profile) return;
     const [mealPlans, waterLogs, basket] = await Promise.all([base44.entities.MealPlan.list(), base44.entities.WaterLog.filter({ date: today }), base44.entities.ShoppingListItem.list()]);
     let sorted = [...mealPlans].sort((a, b) => a.day_index - b.day_index);
-
-    // Migrate legacy meal plans automatically. The current generator adds meal_key;
-    // older persisted plans do not have it, which can make the swap engine appear empty.
     const needsMigration = sorted.length !== 7 || sorted.some((p) => !Array.isArray(p.meals) || p.meals.length === 0 || p.meals.some((m) => !m.meal_key));
     if (needsMigration) {
       const targets = computeTargets(profile);
@@ -42,7 +39,6 @@ export default function Nutrition() {
       await Promise.all(existingBasket.map((item) => base44.entities.ShoppingListItem.delete(item.id)));
       basket.splice(0, basket.length, ...(freshBasket.length ? await base44.entities.ShoppingListItem.bulkCreate(freshBasket) : []));
     }
-
     setPlans(sorted);
     setActiveDay((current) => sorted.some((p) => p.day_index === current) ? current : wdIdx);
     setWater(waterLogs[0]?.amount_ml || 0);
@@ -60,7 +56,6 @@ export default function Nutrition() {
     try { const existing = await base44.entities.WaterLog.filter({ date: today }); if (existing[0]) await base44.entities.WaterLog.update(existing[0].id, { amount_ml: next }); else await base44.entities.WaterLog.create({ date: today, amount_ml: next }); } finally { setBusy(false); }
   };
   const toggleShopping = async (item) => { const updated = await base44.entities.ShoppingListItem.update(item.id, { checked: !item.checked }); setShopping((s) => s.map((x) => (x.id === item.id ? updated : x))); };
-
   const refreshBasket = async (updatedPlans) => {
     const items = generateShoppingList(updatedPlans);
     const existing = await base44.entities.ShoppingListItem.list();
@@ -68,7 +63,6 @@ export default function Nutrition() {
     const created = items.length ? await base44.entities.ShoppingListItem.bulkCreate(items) : [];
     setShopping(created);
   };
-
   const handleSwap = async (mealIndex, replacementKey) => {
     if (!plan || busy) return;
     setBusy(true);
@@ -81,7 +75,6 @@ export default function Nutrition() {
       await refreshBasket(nextPlans);
     } finally { setBusy(false); }
   };
-
   const waterPct = Math.min(100, (water / profile.water_target_ml) * 100);
 
   return <AppLayout>
@@ -95,8 +88,8 @@ export default function Nutrition() {
 }
 
 function SwapPanel({ plan, mealIndex, busy, onClose, onSwap, profile }) {
-  const options = getMealSwapOptions(plan, mealIndex, profile, 3);
-  return <div className="mt-3 rounded-xl border border-border bg-secondary/40 p-3"><div className="mb-2 flex items-center justify-between"><span className="text-xs font-semibold">Swap this meal</span><button onClick={onClose} className="text-muted-foreground"><X className="h-3.5 w-3.5" /></button></div><div className="space-y-2">{options.length ? options.map((option) => <button key={option.key} disabled={busy} onClick={() => onSwap(mealIndex, option.key)} className="w-full rounded-xl border border-border bg-card p-3 text-left transition hover:border-primary"><div className="text-xs font-semibold">{option.name}</div><div className="mt-1 text-[10px] text-muted-foreground">{option.items.join(" · ")}</div></button>) : <div className="text-[11px] text-muted-foreground">No compatible alternative is available for this meal with your current preferences.</div>}</div><p className="mt-2 text-[10px] text-muted-foreground">Your 7-day shopping basket updates automatically.</p></div>;
+  const options = getMealSwapOptions(plan, mealIndex, profile, 4);
+  return <div className="mt-3 rounded-xl border border-border bg-secondary/40 p-3"><div className="mb-2 flex items-center justify-between"><span className="text-xs font-semibold">Swap this meal · 4 choices</span><button onClick={onClose} className="text-muted-foreground"><X className="h-3.5 w-3.5" /></button></div><div className="space-y-2">{options.length ? options.map((option) => <button key={option.key} disabled={busy} onClick={() => onSwap(mealIndex, option.key)} className="w-full rounded-xl border border-border bg-card p-3 text-left transition hover:border-primary"><div className="text-xs font-semibold">{option.name}</div><div className="mt-1 text-[10px] text-muted-foreground">{option.items.join(" · ")}</div></button>) : <div className="text-[11px] text-muted-foreground">No compatible alternative is available for this meal with your current preferences.</div>}</div><p className="mt-2 text-[10px] text-muted-foreground">Your 7-day shopping basket updates automatically.</p></div>;
 }
 
 function Splash() { return <div className="flex min-h-screen items-center justify-center bg-background"><div className="h-8 w-8 animate-spin rounded-full border-2 border-secondary border-t-primary" /></div>; }
