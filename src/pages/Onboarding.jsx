@@ -4,7 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ChevronRight, ChevronLeft, Moon, Sun, Coffee, Dumbbell, Home, Clock3 } from "lucide-react";
+import { ChevronRight, ChevronLeft, Moon, Sun, Coffee, Dumbbell, Home, Clock3, CalendarDays } from "lucide-react";
 import { computeTargets, generateWorkoutPlans, generateMealPlans, generateShoppingList } from "@/lib/fitnessUtils";
 import { cn } from "@/lib/utils";
 
@@ -39,6 +39,12 @@ const TRAINING_TIMES = ["Morning", "Afternoon", "Evening", "After shift"];
 const DAYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+function getLocalDateString() {
+  const now = new Date();
+  const offset = now.getTimezoneOffset() * 60000;
+  return new Date(now.getTime() - offset).toISOString().slice(0, 10);
+}
+
 export default function Onboarding() {
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
@@ -47,6 +53,7 @@ export default function Onboarding() {
     full_name: "", age: "", sex: "male", height_cm: "", weight_kg: "",
     goal: "lose", activity_level: "moderate",
     shift_type: "monday_friday", shift_pattern: "fixed_day", work_days: ["mon", "tue", "wed", "thu", "fri"], custom_shift: "",
+    shift_start_date: getLocalDateString(),
     training_level: "beginner", training_days_per_week: 3, training_time: "Evening", training_location: "gym",
   });
   const set = (key, value) => setForm((f) => ({ ...f, [key]: value }));
@@ -56,7 +63,7 @@ export default function Onboarding() {
   const steps = ["About you", "Goal", "Shifts", "Training", "Your plan"];
   const canNext = () => {
     if (step === 0) return Boolean(form.full_name && form.age && form.height_cm && form.weight_kg);
-    if (step === 2) return form.work_days.length > 0 && (form.shift_type !== "custom" || form.custom_shift.trim());
+    if (step === 2) return Boolean(form.shift_start_date && form.work_days.length > 0 && (form.shift_type !== "custom" || form.custom_shift.trim()));
     return true;
   };
 
@@ -82,7 +89,7 @@ export default function Onboarding() {
       const meals = generateMealPlans(profileData, profileData);
       await base44.entities.MealPlan.bulkCreate(meals);
       await base44.entities.ShoppingListItem.bulkCreate(generateShoppingList(meals));
-      const today = new Date().toISOString().slice(0, 10);
+      const today = getLocalDateString();
       await base44.entities.WaterLog.create({ date: today, amount_ml: 0 });
       await base44.entities.StepLog.create({ date: today, steps: 0 });
       await base44.entities.BodyMetric.create({ date: today, weight_kg: Number(form.weight_kg) });
@@ -118,9 +125,13 @@ export default function Onboarding() {
           <div><ChoiceLabel label="Current activity level" /><div className="grid grid-cols-2 gap-2">{ACTIVITY.map((item) => <Choice key={item.value} active={form.activity_level === item.value} onClick={() => set("activity_level", item.value)}>{item.label}</Choice>)}</div></div>
         </Section>}
 
-        {step === 2 && <Section title="How do you work?" subtitle="This is the important ShiftFit bit — we'll use your shift pattern to plan recovery, meals and training.">
+        {step === 2 && <Section title="How do you work?" subtitle="This is the important ShiftFit bit — we'll use your shift pattern and start date to build your calendar around work, recovery and training.">
           <div className="space-y-2">{SHIFTS.map((shift) => { const Icon = shift.icon; return <button type="button" key={shift.value} onClick={() => { set("shift_type", shift.value); set("shift_pattern", shift.pattern); }} className={cn("flex w-full items-center gap-3 rounded-2xl border p-4 text-left transition-all", form.shift_type === shift.value ? "border-primary bg-primary/10" : "border-border bg-card")}><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary"><Icon className="h-5 w-5 text-primary" /></div><div className="min-w-0 flex-1"><div className="font-semibold">{shift.label}</div><div className="text-xs text-muted-foreground">{shift.desc}</div></div><div className={cn("h-4 w-4 rounded-full border", form.shift_type === shift.value ? "border-primary bg-primary" : "border-muted-foreground")} /></button>; })}</div>
           {form.shift_type === "custom" && <Field label="Describe your shift pattern" value={form.custom_shift} onChange={(v) => set("custom_shift", v)} placeholder="e.g. 3 days, 3 nights, 4 off" />}
+          <div className="rounded-2xl border border-border bg-card p-4">
+            <div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10"><CalendarDays className="h-5 w-5 text-primary" /></div><div><div className="text-sm font-semibold">When does this shift pattern start?</div><p className="mt-1 text-[11px] leading-5 text-muted-foreground">Choose the date your selected work pattern starts. ShiftFit will use this as the anchor for the Calendar and current-day schedule.</p></div></div>
+            <div className="mt-4 space-y-2"><Label>Shift start date</Label><Input type="date" value={form.shift_start_date} onChange={(e) => set("shift_start_date", e.target.value)} /></div>
+          </div>
           <div><ChoiceLabel label="Which days are normally work days?" /><div className="grid grid-cols-7 gap-1.5">{DAYS.map((day, i) => <button type="button" key={day} onClick={() => toggleDay(day)} className={cn("rounded-xl py-2 text-[11px] font-bold", form.work_days.includes(day) ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground")}>{DAY_LABELS[i][0]}</button>)}</div><p className="mt-2 text-[11px] text-muted-foreground">We'll refine exact shift timing later and use this as the starting schedule.</p></div>
         </Section>}
 
@@ -133,7 +144,7 @@ export default function Onboarding() {
 
         {step === 4 && <Section title="Your ShiftFit plan is ready" subtitle="Check everything below. We'll build your 7-day plan when you start.">
           <div className="rounded-2xl border border-border bg-card p-4 text-sm">
-            <Row label="Name" value={form.full_name} /><Row label="Body" value={`${form.height_cm} cm · ${form.weight_kg} kg`} /><Row label="Goal" value={GOALS.find((g) => g.value === form.goal)?.label} /><Row label="Activity" value={ACTIVITY.find((a) => a.value === form.activity_level)?.label} /><Row label="Shift pattern" value={selectedShift.label} /><Row label="Work days" value={form.work_days.map((d) => DAY_LABELS[DAYS.indexOf(d)]).join(", ")} /><Row label="Training" value={`${form.training_days_per_week} days · ${form.training_level}`} /><Row label="Training place" value={form.training_location === "gym" ? "Gym" : "Home"} />
+            <Row label="Name" value={form.full_name} /><Row label="Body" value={`${form.height_cm} cm · ${form.weight_kg} kg`} /><Row label="Goal" value={GOALS.find((g) => g.value === form.goal)?.label} /><Row label="Activity" value={ACTIVITY.find((a) => a.value === form.activity_level)?.label} /><Row label="Shift pattern" value={selectedShift.label} /><Row label="Shift starts" value={form.shift_start_date} /><Row label="Work days" value={form.work_days.map((d) => DAY_LABELS[DAYS.indexOf(d)]).join(", ")} /><Row label="Training" value={`${form.training_days_per_week} days · ${form.training_level}`} /><Row label="Training place" value={form.training_location === "gym" ? "Gym" : "Home"} />
           </div>
           <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4"><div className="text-sm font-semibold">Ready to go?</div><p className="mt-1 text-xs text-muted-foreground">ShiftFit will calculate your targets and create your first Monday–Sunday meals and workouts.</p></div>
         </Section>}
