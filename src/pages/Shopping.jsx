@@ -4,6 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { Check, ChevronRight, ShoppingCart, Sparkles, WalletCards } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getBasketPriceComparison, generateSmartBasket } from "@/lib/shoppingUtils";
+import { completePriceMatch } from "@/lib/priceCompletionUtils";
 import { getProductFamily } from "@/lib/productMatchUtils";
 
 const STORES = ["Aldi", "Lidl", "Asda", "Sainsbury’s", "Tesco", "Morrisons"];
@@ -34,7 +35,7 @@ export default function Shopping() {
     setItems(value => value.map(x => x.id === item.id ? next : x));
   };
 
-  const pricedItems = useMemo(() => getBasketPriceComparison(items), [items]);
+  const pricedItems = useMemo(() => getBasketPriceComparison(items).map(completePriceMatch), [items]);
   const productMatchedItems = useMemo(() => pricedItems.map(item => ({ ...item, productFamily: item.priceMatch?.productMatch ? { key: item.priceMatch.key, label: item.priceMatch.key } : getProductFamily(item.name) })).filter(item => item.productFamily), [pricedItems]);
   const priceMatchedItems = productMatchedItems.filter(item => item.priceMatch?.offers?.length);
   const unpricedCount = Math.max(0, productMatchedItems.length - priceMatchedItems.length);
@@ -42,9 +43,9 @@ export default function Shopping() {
   const storeTotals = useMemo(() => STORES.map(store => {
     const matched = priceMatchedItems.filter(item => item.priceMatch.offers.some(offer => offer.store === store));
     const total = matched.reduce((sum, item) => sum + (item.priceMatch.offers.find(offer => offer.store === store)?.total || 0), 0);
-    const coverage = priceMatchedItems.length ? matched.length / priceMatchedItems.length : 0;
+    const coverage = items.length ? matched.length / items.length : 0;
     return { store, total: Number(total.toFixed(2)), matched: matched.length, coverage };
-  }).filter(row => row.matched > 0).sort((a,b) => b.matched - a.matched || a.total - b.total), [priceMatchedItems]);
+  }).filter(row => row.matched > 0).sort((a,b) => b.matched - a.matched || a.total - b.total), [priceMatchedItems, items.length]);
 
   const bestStore = storeTotals[0];
   const groups = useMemo(() => pricedItems.reduce((acc, item) => { (acc[item.category || "Other"] ||= []).push(item); return acc; }, {}), [pricedItems]);
@@ -60,7 +61,7 @@ export default function Shopping() {
         <div className="mt-4 grid grid-cols-3 gap-2"><div className="rounded-xl border border-white/10 bg-black/20 p-3"><p className="text-[10px] uppercase tracking-wider text-muted-foreground">Basket</p><p className="mt-1 font-bold">{items.length}</p></div><div className="rounded-xl border border-white/10 bg-black/20 p-3"><p className="text-[10px] uppercase tracking-wider text-muted-foreground">Matched</p><p className="mt-1 font-bold">{productMatchedItems.length}</p></div><div className="rounded-xl border border-white/10 bg-black/20 p-3"><p className="text-[10px] uppercase tracking-wider text-muted-foreground">To price</p><p className="mt-1 font-bold">{unpricedCount}</p></div></div>
       </section>
 
-      <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-4"><div className="mb-3 flex items-center gap-2"><WalletCards className="h-4 w-4 text-primary" /><h2 className="font-bold">Compare priced supermarkets</h2></div><div className="space-y-2">{storeTotals.map((row,index) => <div key={row.store} className={cn("flex items-center justify-between rounded-xl border p-3", index === 0 ? "border-primary/30 bg-primary/[0.06]" : "border-white/10 bg-black/10")}><div className="flex items-center gap-3"><div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/[0.06] text-xs font-black">{index+1}</div><div><p className="text-sm font-semibold">{row.store}</p><p className="text-[10px] text-muted-foreground">{row.matched}/{priceMatchedItems.length} priced products · {Math.round(row.coverage*100)}% coverage</p></div></div><div className="text-right"><p className="text-sm font-bold">{money(row.total)}</p>{index === 0 && <p className="text-[10px] font-semibold text-primary">Best coverage</p>}</div></div>)}{!storeTotals.length && <p className="py-4 text-center text-xs text-muted-foreground">No verified prices yet.</p>}</div></section>
+      <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-4"><div className="mb-3 flex items-center gap-2"><WalletCards className="h-4 w-4 text-primary" /><h2 className="font-bold">Compare priced supermarkets</h2></div><div className="space-y-2">{storeTotals.map((row,index) => <div key={row.store} className={cn("flex items-center justify-between rounded-xl border p-3", index === 0 ? "border-primary/30 bg-primary/[0.06]" : "border-white/10 bg-black/10")}><div className="flex items-center gap-3"><div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/[0.06] text-xs font-black">{index+1}</div><div><p className="text-sm font-semibold">{row.store}</p><p className="text-[10px] text-muted-foreground">{row.matched}/{items.length} priced products · {Math.round(row.coverage*100)}% coverage</p></div></div><div className="text-right"><p className="text-sm font-bold">{money(row.total)}</p>{index === 0 && <p className="text-[10px] font-semibold text-primary">Best coverage</p>}</div></div>)}{!storeTotals.length && <p className="py-4 text-center text-xs text-muted-foreground">No verified prices yet.</p>}</div></section>
 
       <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-4"><h2 className="font-bold">Matched products</h2><p className="mt-1 text-[11px] text-muted-foreground">{productMatchedItems.length}/{items.length} product families matched. {unpricedCount} still need a verified pack price.</p><div className="mt-3 space-y-2">{productMatchedItems.map(item => { const best = item.priceMatch?.cheapest; return <div key={item.id || item.name} className="rounded-xl border border-white/10 bg-black/10 p-3"><div className="flex items-center justify-between gap-3"><div><p className="text-sm font-semibold">{item.name}</p><p className="text-[10px] text-muted-foreground">Need {item.quantity} · {item.productFamily.label}</p></div>{best ? <div className="text-right"><p className="text-sm font-bold text-primary">{best.store} {money(best.total)}</p><p className="text-[10px] text-muted-foreground">{best.packs} pack{best.packs === 1 ? "" : "s"}</p></div> : <span className="rounded-full border border-white/10 px-2 py-1 text-[10px] text-muted-foreground">Price pending</span>}</div>{best && <div className="mt-2 flex flex-wrap gap-1.5">{item.priceMatch.offers.slice(0,5).map(offer => <span key={offer.store} className={cn("rounded-full border px-2 py-1 text-[10px]", offer.store === best.store ? "border-primary/30 bg-primary/10 text-primary" : "border-white/10 text-muted-foreground")}>{offer.store} {money(offer.total)}</span>)}</div>}</div>; })}</div></section>
       <p className="px-2 text-center text-[10px] leading-4 text-muted-foreground">Product matches cover the personalised basket. Prices are a dated public snapshot and can change by store, region, loyalty status and date. The app does not claim live checkout pricing yet.</p>
