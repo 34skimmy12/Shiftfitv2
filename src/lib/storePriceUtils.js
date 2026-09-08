@@ -6,7 +6,7 @@ const src = "Verified public UK supermarket price snapshot";
 const STORE_PRICES = {
   "chicken breast": { unit:"g", pack:1000, stores:{ Aldi:{price:1.99}, Lidl:{price:4.99}, Asda:{price:2.33}, "Sainsbury’s":{price:2.00}, Tesco:{price:2.44}, Morrisons:{price:2.49} } },
   "turkey mince": { unit:"g", pack:500, stores:{ Aldi:{price:2.99}, Lidl:{price:4.99}, Asda:{price:3.50}, "Sainsbury’s":{price:3.95}, Tesco:{price:4.40}, Morrisons:{price:4.49} } },
-  "beef mince": { unit:"g", pack:500, stores:{ Lidl:{price:5.49,pack:800}, Asda:{price:3.25}, "Sainsbury’s":{price:3.09}, Tesco:{price:2.40}, Morrisons:{price:5.05} } },
+  "beef mince": { unit:"g", pack:500, stores:{ Aldi:{price:3.09,pack:500}, Lidl:{price:5.49,pack:800}, Asda:{price:3.25}, "Sainsbury’s":{price:3.09}, Tesco:{price:2.40}, Morrisons:{price:5.05} } },
   salmon: { unit:"g", pack:240, stores:{ Aldi:{price:3.59,pack:240}, Lidl:{price:4.49,pack:240}, Asda:{price:4.19,pack:350}, "Sainsbury’s":{price:4.95,pack:250}, Tesco:{price:4.90,pack:260}, Morrisons:{price:4.15,pack:220} } },
   tuna: { unit:"g", pack:110, stores:{ Aldi:{price:1.39,pack:145}, Lidl:{price:1.29,pack:145}, Asda:{price:1.25,pack:145}, "Sainsbury’s":{price:1.35,pack:145}, Tesco:{price:1.40,pack:110}, Morrisons:{price:1.35,pack:145} } },
   cod: { unit:"g", pack:280, stores:{ Aldi:{price:4.99,pack:300}, Lidl:{price:4.99,pack:300}, Asda:{price:5.00,pack:400}, "Sainsbury’s":{price:5.00,pack:400}, Tesco:{price:8.15,pack:280}, Morrisons:{price:5.00,pack:400} } },
@@ -46,7 +46,7 @@ const STORE_PRICES = {
   "pumpkin seeds": { unit:"g", pack:150, stores:{ Aldi:{price:1.49,pack:200}, Lidl:{price:1.49,pack:200}, Asda:{price:1.80,pack:200}, "Sainsbury’s":{price:1.80,pack:200}, Tesco:{price:1.80,pack:150}, Morrisons:{price:1.80,pack:200} } },
   "sesame oil": { unit:"ml", pack:250, stores:{ Aldi:{price:2.49,pack:250}, Lidl:{price:2.49,pack:250}, Asda:{price:2.50,pack:250}, "Sainsbury’s":{price:2.50,pack:250}, Tesco:{price:2.65,pack:250}, Morrisons:{price:2.50,pack:250} } },
   "olive oil": { unit:"ml", pack:500, stores:{ Aldi:{price:4.49,pack:500}, Lidl:{price:5.99,pack:500}, Asda:{price:4.30,pack:500}, "Sainsbury’s":{price:4.65,pack:500}, Tesco:{price:4.75,pack:500}, Morrisons:{price:6.00,pack:500} } },
-  honey: { unit:"g", pack:340, stores:{ Aldi:{price:1.19,pack:340}, Lidl:{price:1.29,pack:340}, Asda:{price:1.20,pack:340}, "Sainsbury’s":{price:1.20,pack:340}, Tesco:{price:1.19,pack:340}, Morrisons:{price:1.25,pack:340} } },
+  honey: { unit:"g", pack:340, stores:{ Aldi:{price:0.99,pack:454}, Asda:{price:0.74,pack:340}, "Sainsbury’s":{price:1.04,pack:340}, Tesco:{price:1.19,pack:340}, Morrisons:{price:1.25,pack:454} } },
   hummus: { unit:"g", pack:200, stores:{ Aldi:{price:1.19,pack:200}, Lidl:{price:1.19,pack:200}, Asda:{price:1.20,pack:200}, "Sainsbury’s":{price:1.20,pack:200}, Tesco:{price:1.30,pack:200}, Morrisons:{price:1.20,pack:200} } },
 };
 
