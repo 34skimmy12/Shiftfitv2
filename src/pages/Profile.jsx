@@ -46,16 +46,25 @@ export default function Profile() {
       const updated = await base44.entities.UserProfile.update(profile.id, { ...clean, ...targets });
       setProfile(updated); setForm({ ...updated, food_likes: (updated.food_likes || []).join(", "), food_avoid: (updated.food_avoid || []).join(", ") });
       if (regenerate) {
-        const meals = generateMealPlans({ ...clean, ...targets }, targets, clean.food_likes, clean.food_avoid);
+        const meals = generateMealPlans({ ...clean, ...targets }, targets);
         const workouts = generateWorkoutPlans({ ...clean, ...targets });
+
+        // Replace persisted plans instead of updating whatever legacy rows happen to exist.
+        // This guarantees the live app cannot keep showing meals from an older generator.
         const existingMeals = await base44.entities.MealPlan.list();
+        await Promise.all(existingMeals.map((p) => base44.entities.MealPlan.delete(p.id)));
+        await base44.entities.MealPlan.bulkCreate(meals);
+
         const existingWorkouts = await base44.entities.WorkoutPlan.list();
-        for (const p of existingMeals) await base44.entities.MealPlan.update(p.id, meals.find((x) => x.day_index === p.day_index) || {});
-        for (const p of existingWorkouts) await base44.entities.WorkoutPlan.update(p.id, workouts.find((x) => x.day_index === p.day_index) || {});
+        await Promise.all(existingWorkouts.map((p) => base44.entities.WorkoutPlan.delete(p.id)));
+        await base44.entities.WorkoutPlan.bulkCreate(workouts);
+
+        // The basket must represent this exact newly generated 7-day plan.
         const oldShopping = await base44.entities.ShoppingListItem.list();
-        for (const item of oldShopping) await base44.entities.ShoppingListItem.update(item.id, { checked: false });
+        await Promise.all(oldShopping.map((item) => base44.entities.ShoppingListItem.delete(item.id)));
         const list = generateShoppingList(meals);
-        for (const item of list) await base44.entities.ShoppingListItem.create(item);
+        if (list.length) await base44.entities.ShoppingListItem.bulkCreate(list);
+
         setMessage("Saved — your full 7-day plan has been rebuilt.");
       } else setMessage("Profile saved.");
     } catch (e) { setMessage("Couldn’t save your changes. Try again."); }
