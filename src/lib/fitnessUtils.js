@@ -16,14 +16,8 @@ export function computeTargets(profile) {
 }
 export function shiftForWeekday(profile, weekdayIdx) { const day = WEEKDAYS[weekdayIdx]; if (!profile.work_days?.includes(day)) return "rest"; if (profile.shift_pattern === "fixed_night") return "night"; if (profile.shift_pattern === "rotating") return weekdayIdx % 2 === 0 ? "day" : "night"; return "day"; }
 export const SHIFT_META = { day: { label: "Day Shift", color: "text-primary", dot: "bg-primary" }, night: { label: "Night Shift", color: "text-accent", dot: "bg-accent" } };
-
-const WORKOUT_TEMPLATES = {
-  day: [{ title: "Upper Body Power", focus: "Chest, Back, Shoulders", duration_min: 50, intensity: "high", exercises: [{ name: "Barbell Bench Press", sets: 4, reps: "6-8", rest_sec: 120, notes: "Keep shoulders retracted" }, { name: "Bent-Over Row", sets: 4, reps: "8-10", rest_sec: 90, notes: "Squeeze at top" }, { name: "Overhead Press", sets: 3, reps: "8-10", rest_sec: 90, notes: "Brace core" }, { name: "Lat Pulldown", sets: 3, reps: "10-12", rest_sec: 75, notes: "" }, { name: "Dumbbell Curl", sets: 3, reps: "12", rest_sec: 60, notes: "" }, { name: "Tricep Pushdown", sets: 3, reps: "12", rest_sec: 60, notes: "" }] }, { title: "Lower Body Strength", focus: "Quads, Hamstrings, Glutes", duration_min: 55, intensity: "high", exercises: [{ name: "Barbell Squat", sets: 4, reps: "6-8", rest_sec: 150, notes: "Depth to parallel" }, { name: "Romanian Deadlift", sets: 4, reps: "8-10", rest_sec: 120, notes: "Hinge at hips" }, { name: "Leg Press", sets: 3, reps: "10-12", rest_sec: 90, notes: "" }, { name: "Walking Lunges", sets: 3, reps: "12/leg", rest_sec: 75, notes: "" }, { name: "Calf Raises", sets: 4, reps: "15", rest_sec: 45, notes: "" }] }],
-  night: [{ title: "Night Shift Maintenance", focus: "Full Body — Moderate", duration_min: 30, intensity: "moderate", exercises: [{ name: "Goblet Squat", sets: 3, reps: "10", rest_sec: 75, notes: "Keep torso upright" }, { name: "Dumbbell Row", sets: 3, reps: "12", rest_sec: 60, notes: "" }, { name: "Push-Up", sets: 3, reps: "AMRAP", rest_sec: 60, notes: "Quality over quantity" }, { name: "Plank", sets: 3, reps: "45s", rest_sec: 45, notes: "Brace hard" }, { name: "Kettlebell Swing", sets: 3, reps: "15", rest_sec: 60, notes: "Hip drive" }] }],
-  rest: [{ title: "Active Recovery", focus: "Mobility & Light Cardio", duration_min: 25, intensity: "low", exercises: [{ name: "Foam Rolling", sets: 1, reps: "10 min", rest_sec: 0, notes: "Focus on tight areas" }, { name: "Hip Mobility Flow", sets: 1, reps: "8 min", rest_sec: 0, notes: "90/90 transitions" }, { name: "Brisk Walk", sets: 1, reps: "15 min", rest_sec: 0, notes: "Zone 2 — easy pace" }, { name: "Deep Stretching", sets: 1, reps: "10 min", rest_sec: 0, notes: "Hold 30s each" }] }]
-};
+const WORKOUT_TEMPLATES = { day: [{ title: "Upper Body Power", focus: "Chest, Back, Shoulders", duration_min: 50, intensity: "high", exercises: [{ name: "Barbell Bench Press", sets: 4, reps: "6-8", rest_sec: 120, notes: "Keep shoulders retracted" }, { name: "Bent-Over Row", sets: 4, reps: "8-10", rest_sec: 90, notes: "Squeeze at top" }, { name: "Overhead Press", sets: 3, reps: "8-10", rest_sec: 90, notes: "Brace core" }, { name: "Lat Pulldown", sets: 3, reps: "10-12", rest_sec: 75, notes: "" }, { name: "Dumbbell Curl", sets: 3, reps: "12", rest_sec: 60, notes: "" }, { name: "Tricep Pushdown", sets: 3, reps: "12", rest_sec: 60, notes: "" }] }, { title: "Lower Body Strength", focus: "Quads, Hamstrings, Glutes", duration_min: 55, intensity: "high", exercises: [{ name: "Barbell Squat", sets: 4, reps: "6-8", rest_sec: 150, notes: "Depth to parallel" }, { name: "Romanian Deadlift", sets: 4, reps: "8-10", rest_sec: 120, notes: "Hinge at hips" }, { name: "Leg Press", sets: 3, reps: "10-12", rest_sec: 90, notes: "" }, { name: "Walking Lunges", sets: 3, reps: "12/leg", rest_sec: 75, notes: "" }, { name: "Calf Raises", sets: 4, reps: "15", rest_sec: 45, notes: "" }] }], night: [{ title: "Night Shift Maintenance", focus: "Full Body — Moderate", duration_min: 30, intensity: "moderate", exercises: [{ name: "Goblet Squat", sets: 3, reps: "10", rest_sec: 75, notes: "Keep torso upright" }, { name: "Dumbbell Row", sets: 3, reps: "12", rest_sec: 60, notes: "" }, { name: "Push-Up", sets: 3, reps: "AMRAP", rest_sec: 60, notes: "Quality over quantity" }, { name: "Plank", sets: 3, reps: "45s", rest_sec: 45, notes: "Brace hard" }, { name: "Kettlebell Swing", sets: 3, reps: "15", rest_sec: 60, notes: "Hip drive" }] }], rest: [{ title: "Active Recovery", focus: "Mobility & Light Cardio", duration_min: 25, intensity: "low", exercises: [{ name: "Foam Rolling", sets: 1, reps: "10 min", rest_sec: 0, notes: "Focus on tight areas" }, { name: "Hip Mobility Flow", sets: 1, reps: "8 min", rest_sec: 0, notes: "90/90 transitions" }, { name: "Brisk Walk", sets: 1, reps: "15 min", rest_sec: 0, notes: "Zone 2 — easy pace" }, { name: "Deep Stretching", sets: 1, reps: "10 min", rest_sec: 0, notes: "Hold 30s each" }] } ] };
 export function generateWorkoutPlans(profile) { return Array.from({ length: 7 }, (_, i) => { const shift = shiftForWeekday(profile, i); const tmpl = WORKOUT_TEMPLATES[shift][i % WORKOUT_TEMPLATES[shift].length]; return { day_index: i, day_label: WEEKDAY_LABELS[i], shift_context: shift, title: tmpl.title, focus: tmpl.focus, duration_min: tmpl.duration_min, intensity: tmpl.intensity, exercises: tmpl.exercises }; }); }
-
 function roundTo(n, step) { return Math.round(n / step) * step; }
 const MEAL_LIBRARY = [
   { key: "yogurt_bowl", shifts: ["day", "rest", "night"], types: ["breakfast", "pre_shift"], name: "Greek Yogurt Berry Bowl", tags: ["yogurt", "berries", "oats", "vegetarian"], items: ["Greek yogurt 250g", "Oats 40g", "Mixed berries 100g", "Honey 1 tsp"], p: 30, c: 48, f: 7 },
@@ -52,84 +46,32 @@ const MEAL_LIBRARY = [
 ];
 const MEAL_SLOTS = { day: ["breakfast", "lunch", "snack", "dinner"], night: ["pre_shift", "snack", "lunch", "post_shift"], rest: ["breakfast", "lunch", "snack", "dinner"] };
 function normaliseList(value) { if (Array.isArray(value)) return value.map((x) => String(x).trim().toLowerCase()).filter(Boolean); return String(value || "").split(",").map((x) => x.trim().toLowerCase()).filter(Boolean); }
-function matchesPreference(meal, likes, avoid) { const haystack = `${meal.name} ${meal.items.join(" ")} ${meal.tags.join(" ")}`.toLowerCase(); if (avoid.some((x) => haystack.includes(x))) return false; return likes.length === 0 || likes.some((x) => haystack.includes(x)); }
+function matchesPreference(meal, likes, avoid) { const hay = [...(meal.tags || []), meal.name, ...(meal.items || [])].join(" ").toLowerCase(); return avoid.some((x) => hay.includes(x)) || (likes.length > 0 && likes.some((x) => hay.includes(x))); }
 function candidateMeals(shift, slot, avoid) { return MEAL_LIBRARY.filter((m) => m.shifts.includes(shift) && m.types.includes(slot) && !matchesPreference(m, [], avoid)); }
-function pickMeal(shift, slot, dayIndex, usedKeys, likes, avoid, excludedKey = null) {
-  let candidates = candidateMeals(shift, slot, avoid).filter((m) => m.key !== excludedKey);
-  if (!candidates.length) candidates = MEAL_LIBRARY.filter((m) => m.shifts.includes(shift) && m.types.includes(slot) && m.key !== excludedKey);
-  const liked = candidates.filter((m) => matchesPreference(m, likes, [])); if (liked.length) candidates = liked;
-  const unused = candidates.filter((m) => !usedKeys.has(m.key)); const pool = unused.length ? unused : candidates;
-  return pool[(dayIndex + slot.length) % pool.length] || candidates[0];
-}
-function buildMeal(meal, slot, scale, goalAdjust = 1) { const p = roundTo(meal.p * scale * goalAdjust, 1); const c = roundTo(meal.c * scale, 1); const f = roundTo(meal.f * scale, 1); return { type: slot, name: meal.name, calories: roundTo(p * 4 + c * 4 + f * 9, 5), protein: p, carbs: c, fat: f, items: meal.items, meal_key: meal.key }; }
-export function generateMealPlans(profile, targets) {
-  const likes = normaliseList(profile.food_likes); const avoid = normaliseList(profile.food_avoid); const plans = [];
-  for (let i = 0; i < 7; i++) {
-    const shift = shiftForWeekday(profile, i); const slots = MEAL_SLOTS[shift]; const usedKeys = new Set();
-    const chosen = slots.map((slot) => { const meal = pickMeal(shift, slot, i, usedKeys, likes, avoid); usedKeys.add(meal.key); return { ...meal, slot }; });
-    const baseCalories = chosen.reduce((sum, m) => sum + m.p * 4 + m.c * 4 + m.f * 9, 0); const scale = targets.calorie_target > 0 ? targets.calorie_target / baseCalories : 1; const goalAdjust = profile.goal === "gain" ? 1.02 : profile.goal === "lose" ? 0.98 : 1;
-    const meals = chosen.map((m) => buildMeal(m, m.slot, scale, goalAdjust));
-    plans.push({ day_index: i, day_label: WEEKDAY_LABELS[i], shift_context: shift, meals, total_calories: meals.reduce((s, m) => s + m.calories, 0), total_protein: meals.reduce((s, m) => s + m.protein, 0) });
-  }
-  return plans;
-}
-
+function pickMeal(shift, slot, dayIndex, usedKeys, likes, avoid) { let candidates = candidateMeals(shift, slot, avoid).filter((m) => !usedKeys.has(m.key)); if (!candidates.length) candidates = candidateMeals(shift, slot, avoid); const liked = candidates.filter((m) => matchesPreference(m, likes, [])); if (liked.length) candidates = [...liked, ...candidates.filter((m) => !liked.includes(m))]; return candidates[dayIndex % candidates.length]; }
+function buildMeal(meal, slot, scale, goalAdjust) { return { type: slot, name: meal.name, calories: roundTo((meal.p * 4 + meal.c * 4 + meal.f * 9) * scale, 5), protein: Math.round(meal.p * scale * goalAdjust), carbs: Math.round(meal.c * scale), fat: Math.round(meal.f * scale), items: meal.items, meal_key: meal.key }; }
+export function generateMealPlans(profile, targets) { const likes = normaliseList(profile.food_likes); const avoid = normaliseList(profile.food_avoid); const plans = []; for (let i = 0; i < 7; i++) { const shift = shiftForWeekday(profile, i); const slots = MEAL_SLOTS[shift]; const usedKeys = new Set(); const chosen = slots.map((slot) => { const meal = pickMeal(shift, slot, i, usedKeys, likes, avoid); usedKeys.add(meal.key); return { ...meal, slot }; }); const baseCalories = chosen.reduce((sum, m) => sum + m.p * 4 + m.c * 4 + m.f * 9, 0); const scale = targets.calorie_target > 0 ? targets.calorie_target / baseCalories : 1; const goalAdjust = profile.goal === "gain" ? 1.02 : profile.goal === "lose" ? 0.98 : 1; const meals = chosen.map((m) => buildMeal(m, m.slot, scale, goalAdjust)); plans.push({ day_index: i, day_label: WEEKDAY_LABELS[i], shift_context: shift, meals, total_calories: meals.reduce((s, m) => s + m.calories, 0), total_protein: meals.reduce((s, m) => s + m.protein, 0) }); } return plans; }
 const normaliseText = (value) => String(value || "").trim().toLowerCase();
-function normaliseShift(plan, profile) {
-  const direct = normaliseText(plan?.shift_context);
-  if (["day", "night", "rest"].includes(direct)) return direct;
-  const pattern = normaliseText(profile?.shift_pattern);
-  if (pattern.includes("night")) return "night";
-  if (pattern.includes("rotat")) return "day";
-  return "day";
-}
+function normaliseShift(plan, profile) { const direct = normaliseText(plan?.shift_context); if (["day", "night", "rest"].includes(direct)) return direct; const pattern = normaliseText(profile?.shift_pattern); if (pattern.includes("night")) return "night"; if (pattern.includes("rotat")) return "day"; return "day"; }
 function isSameMeal(libraryMeal, current) { return libraryMeal.key === current?.meal_key || normaliseText(libraryMeal.name) === normaliseText(current?.name); }
-function rankSwapCandidates(candidates, likes) {
-  const liked = candidates.filter((m) => matchesPreference(m, likes, []));
-  return liked.length ? [...liked, ...candidates.filter((m) => !liked.includes(m))] : candidates;
-}
-function getCompatibleSwapCandidates(plan, mealIndex, profile) {
-  const current = plan?.meals?.[mealIndex]; if (!current) return [];
-  const shift = normaliseShift(plan, profile); const slot = normaliseText(current.type);
-  const likes = normaliseList(profile?.food_likes); const avoid = normaliseList(profile?.food_avoid);
-  const isCandidate = (m) => m.types.includes(slot) && !isSameMeal(m, current);
+function rankSwapCandidates(candidates, likes) { const liked = candidates.filter((m) => matchesPreference(m, likes, [])); return liked.length ? [...liked, ...candidates.filter((m) => !liked.includes(m))] : candidates; }
+function getCompatibleSwapCandidates(plan, mealIndex, profile) { const current = plan?.meals?.[mealIndex]; if (!current) return []; const shift = normaliseShift(plan, profile); const slot = normaliseText(current.type); const likes = normaliseList(profile?.food_likes); const avoid = normaliseList(profile?.food_avoid); const isCandidate = (m) => m.types.includes(slot) && !isSameMeal(m, current); let candidates = MEAL_LIBRARY.filter((m) => m.shifts.includes(shift) && isCandidate(m) && !matchesPreference(m, [], avoid)); if (!candidates.length) candidates = MEAL_LIBRARY.filter((m) => isCandidate(m) && !matchesPreference(m, [], avoid)); if (!candidates.length) candidates = MEAL_LIBRARY.filter((m) => m.shifts.includes(shift) && isCandidate(m)); if (!candidates.length) candidates = MEAL_LIBRARY.filter(isCandidate); return rankSwapCandidates(candidates, likes); }
+export function getMealSwapOptions(plan, mealIndex, profile, limit = 4) { return getCompatibleSwapCandidates(plan, mealIndex, profile).slice(0, Math.max(1, limit)).map((m) => ({ key: m.key, name: m.name, items: m.items })); }
+export function swapMeal(plan, mealIndex, profile, targets, replacementKey = null) { if (!plan?.meals?.[mealIndex]) return plan; const current = plan.meals[mealIndex]; const shift = normaliseShift(plan, profile); const slot = normaliseText(current.type); const avoid = normaliseList(profile?.food_avoid); let replacement = replacementKey ? MEAL_LIBRARY.find((m) => m.key === replacementKey) : null; if (!replacement || !replacement.shifts.includes(shift) || !replacement.types.includes(slot) || isSameMeal(replacement, current) || matchesPreference(replacement, [], avoid)) replacement = null; if (!replacement) replacement = getCompatibleSwapCandidates(plan, mealIndex, profile)[0]; if (!replacement) return plan; const baseCalories = plan.meals.reduce((sum, m, idx) => idx === mealIndex ? sum : sum + m.calories, 0); const desiredMealCalories = Math.max(150, (targets.calorie_target || plan.total_calories || 2000) - baseCalories); const replacementBase = replacement.p * 4 + replacement.c * 4 + replacement.f * 9; const scale = replacementBase > 0 ? desiredMealCalories / replacementBase : 1; const nextMeal = buildMeal(replacement, slot, scale, profile.goal === "gain" ? 1.02 : profile.goal === "lose" ? 0.98 : 1); const meals = plan.meals.map((m, idx) => idx === mealIndex ? nextMeal : m); return { ...plan, meals, total_calories: meals.reduce((s, m) => s + m.calories, 0), total_protein: meals.reduce((s, m) => s + m.protein, 0) }; }
 
-  // Tier 1: exact shift + meal type + avoidances.
-  let candidates = MEAL_LIBRARY.filter((m) => m.shifts.includes(shift) && isCandidate(m) && !matchesPreference(m, [], avoid));
-  // Tier 2: same meal type + avoidances, allowing another shift if the library is small.
-  if (!candidates.length) candidates = MEAL_LIBRARY.filter((m) => isCandidate(m) && !matchesPreference(m, [], avoid));
-  // Tier 3: never leave a normal meal with a broken swap panel. If the user's
-  // stored preferences exclude the entire library, offer same-shift/type meals
-  // rather than an empty list so the user can still choose a replacement.
-  if (!candidates.length) candidates = MEAL_LIBRARY.filter((m) => m.shifts.includes(shift) && isCandidate(m));
-  // Final safety net for legacy/unknown shift values.
-  if (!candidates.length) candidates = MEAL_LIBRARY.filter(isCandidate);
-  return rankSwapCandidates(candidates, likes);
+function parseIngredient(raw) {
+  const text = String(raw || "").trim();
+  const match = text.match(/^(.+?)\s+(\d+(?:\.\d+)?)\s*(kg|g|ml|l|slices?|eggs?|scoop|half|whole|tbsp|tsp|servings?)$/i);
+  if (!match) return { key: text.toLowerCase(), name: text, amount: null, unit: null };
+  const name = match[1].trim(); const amount = parseFloat(match[2]); const unit = match[3].toLowerCase().replace(/s$/, "");
+  return { key: name.toLowerCase(), name, amount, unit };
 }
-export function getMealSwapOptions(plan, mealIndex, profile, limit = 4) {
-  return getCompatibleSwapCandidates(plan, mealIndex, profile).slice(0, Math.max(1, limit)).map((m) => ({ key: m.key, name: m.name, items: m.items }));
-}
-
-export function swapMeal(plan, mealIndex, profile, targets, replacementKey = null) {
-  if (!plan?.meals?.[mealIndex]) return plan;
-  const current = plan.meals[mealIndex]; const shift = normaliseShift(plan, profile); const slot = normaliseText(current.type); const avoid = normaliseList(profile?.food_avoid);
-  let replacement = replacementKey ? MEAL_LIBRARY.find((m) => m.key === replacementKey) : null;
-  if (!replacement || !replacement.shifts.includes(shift) || !replacement.types.includes(slot) || isSameMeal(replacement, current) || matchesPreference(replacement, [], avoid)) replacement = null;
-  if (!replacement) replacement = getCompatibleSwapCandidates(plan, mealIndex, profile)[0];
-  if (!replacement) return plan;
-  const baseCalories = plan.meals.reduce((sum, m, idx) => idx === mealIndex ? sum : sum + m.calories, 0);
-  const desiredMealCalories = Math.max(150, (targets.calorie_target || plan.total_calories || 2000) - baseCalories);
-  const replacementBase = replacement.p * 4 + replacement.c * 4 + replacement.f * 9;
-  const scale = replacementBase > 0 ? desiredMealCalories / replacementBase : 1;
-  const nextMeal = buildMeal(replacement, slot, scale, profile.goal === "gain" ? 1.02 : profile.goal === "lose" ? 0.98 : 1);
-  const meals = plan.meals.map((m, idx) => idx === mealIndex ? nextMeal : m);
-  return { ...plan, meals, total_calories: meals.reduce((s, m) => s + m.calories, 0), total_protein: meals.reduce((s, m) => s + m.protein, 0) };
-}
-
+function formatQuantity(amount, unit) { if (unit === "g" && amount >= 1000) return `${(amount / 1000).toFixed(amount % 1000 === 0 ? 0 : 2)}kg`; if (unit === "ml" && amount >= 1000) return `${(amount / 1000).toFixed(amount % 1000 === 0 ? 0 : 2)}L`; const rounded = Math.round(amount * 10) / 10; return `${rounded % 1 === 0 ? rounded : rounded.toFixed(1)}${unit}`; }
 export function generateShoppingList(mealPlans) {
-  const items = []; const seen = new Set();
+  const items = []; const grouped = new Map();
+  mealPlans.forEach((plan) => (plan.meals || []).forEach((meal) => (meal.items || []).forEach((raw) => { const parsed = parseIngredient(raw); const bucket = grouped.get(parsed.key) || { name: parsed.name, amount: 0, unit: parsed.unit, category: "Other", count: 0 }; bucket.count += 1; if (parsed.amount != null && bucket.unit === parsed.unit) bucket.amount += parsed.amount; grouped.set(parsed.key, bucket); })));
   const categorize = (name) => { const n = name.toLowerCase(); if (/(chicken|salmon|turkey|beef|tuna|eggs?|whey|cottage cheese|greek yogurt|yogurt|skyr|cod)/.test(n)) return "Protein"; if (/(broccoli|spinach|peppers|onion|berries|pear|avocado|veg|salad|greens|stir-fry|green beans|tomato|apple)/.test(n)) return "Produce"; if (/(milk|cheese|butter|hummus|honey)/.test(n)) return "Dairy"; if (/(rice|oats|quinoa|toast|wrap|granola|bread|chia|potatoes)/.test(n)) return "Grains"; if (/(oil|almonds|peanut|sesame|seeds)/.test(n)) return "Pantry"; return "Other"; };
-  mealPlans.forEach((plan) => plan.meals.forEach((m) => m.items.forEach((it) => { const key = it.toLowerCase(); if (!seen.has(key)) { seen.add(key); items.push({ name: it, category: categorize(it), quantity: "x7 days", checked: false }); } })));
+  grouped.forEach((bucket) => { const quantity = bucket.amount > 0 ? formatQuantity(bucket.amount, bucket.unit) : (bucket.count > 1 ? `x${bucket.count}` : "1"); items.push({ name: bucket.name, category: categorize(bucket.name), quantity, checked: false }); });
   return items;
 }
 export function shiftTip(shift) { if (shift === "night") return "Prioritise protein every 3-4 hrs overnight, keep caffeine before 2am, and dim screens on the commute home to protect sleep."; if (shift === "day") return "Front-load carbs around your shift, train before work if possible, and wind down screens 60 min before bed."; return "Use rest days for mobility, meal prep and extra sleep — recovery is where progress happens."; }
