@@ -65,7 +65,7 @@ export default function Profile() {
 
   return <AppLayout>
     <div className="mb-5 flex items-center gap-3">
-      <button onClick={() => navigate(-1)} className="flex h-9 w-9 items-center justify-center rounded-xl bg-secondary" aria-label="Go back"><ArrowLeft className="h-4 w-4" /></button>
+      <button onClick={() => navigate("/settings")} className="flex h-9 w-9 items-center justify-center rounded-xl bg-secondary" aria-label="Back to Settings"><ArrowLeft className="h-4 w-4" /></button>
       <div className="flex-1"><h1 className="text-xl font-bold">Profile</h1><p className="text-xs text-muted-foreground">Your ShiftFit profile and plan setup</p></div>
     </div>
 
