@@ -1,10 +1,10 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ChevronRight, ChevronLeft, Moon, Sun, Coffee, Dumbbell, Home, Clock3, CalendarDays } from "lucide-react";
+import { ChevronRight, ChevronLeft, Sun, Coffee, Dumbbell, Home, Clock3, CalendarDays } from "lucide-react";
 import { computeTargets, generateWorkoutPlans, generateMealPlans, generateShoppingList } from "@/lib/fitnessUtils";
 import { cn } from "@/lib/utils";
 
@@ -45,22 +45,53 @@ function getLocalDateString() {
   return new Date(now.getTime() - offset).toISOString().slice(0, 10);
 }
 
+const DEFAULT_FORM = () => ({
+  full_name: "", age: "", sex: "male", height_cm: "", weight_kg: "",
+  goal: "lose", activity_level: "moderate",
+  shift_type: "monday_friday", shift_pattern: "fixed_day", work_days: ["mon", "tue", "wed", "thu", "fri"], custom_shift: "",
+  shift_start_date: getLocalDateString(),
+  training_level: "beginner", training_days_per_week: 3, training_time: "Evening", training_location: "gym",
+});
+
 export default function Onboarding() {
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({
-    full_name: "", age: "", sex: "male", height_cm: "", weight_kg: "",
-    goal: "lose", activity_level: "moderate",
-    shift_type: "monday_friday", shift_pattern: "fixed_day", work_days: ["mon", "tue", "wed", "thu", "fri"], custom_shift: "",
-    shift_start_date: getLocalDateString(),
-    training_level: "beginner", training_days_per_week: 3, training_time: "Evening", training_location: "gym",
-  });
+  const [loadingProfile, setLoadingProfile] = useState(true);
+  const [existingProfile, setExistingProfile] = useState(null);
+  const [form, setForm] = useState(DEFAULT_FORM);
+
+  useEffect(() => {
+    base44.entities.UserProfile.list().then((rows) => {
+      const profile = rows[0] || null;
+      setExistingProfile(profile);
+      if (profile) {
+        const shiftType = profile.shift_type || (profile.shift_pattern === "fixed_day" ? "monday_friday" : "custom");
+        setForm((current) => ({
+          ...current,
+          ...profile,
+          age: profile.age ?? "",
+          height_cm: profile.height_cm ?? "",
+          weight_kg: profile.weight_kg ?? "",
+          shift_type: shiftType,
+          shift_pattern: profile.shift_pattern || (SHIFTS.find((s) => s.value === shiftType)?.pattern || "fixed_day"),
+          work_days: profile.work_days?.length ? profile.work_days : current.work_days,
+          custom_shift: profile.custom_shift || "",
+          shift_start_date: profile.shift_start_date || getLocalDateString(),
+          training_level: profile.training_level || "beginner",
+          training_days_per_week: profile.training_days_per_week || 3,
+          training_time: profile.training_time || "Evening",
+          training_location: profile.training_location || "gym",
+        }));
+      }
+    }).finally(() => setLoadingProfile(false));
+  }, []);
+
   const set = (key, value) => setForm((f) => ({ ...f, [key]: value }));
   const selectedShift = SHIFTS.find((s) => s.value === form.shift_type) || SHIFTS[2];
   const toggleDay = (day) => set("work_days", form.work_days.includes(day) ? form.work_days.filter((d) => d !== day) : [...form.work_days, day]);
-
   const steps = ["About you", "Goal", "Shifts", "Training", "Your plan"];
+
   const canNext = () => {
     if (step === 0) return Boolean(form.full_name && form.age && form.height_cm && form.weight_kg);
     if (step === 2) return Boolean(form.shift_start_date && form.work_days.length > 0 && (form.shift_type !== "custom" || form.custom_shift.trim()));
@@ -78,26 +109,45 @@ export default function Onboarding() {
         onboarding_complete: true,
       };
       const goalForEngine = form.goal === "strength" ? "maintain" : form.goal;
-      const profileData = {
-        ...baseProfile,
-        goal: goalForEngine,
-        ...computeTargets({ ...baseProfile, goal: goalForEngine }),
-      };
-      await base44.entities.UserProfile.create(profileData);
+      const profileData = { ...baseProfile, goal: goalForEngine, ...computeTargets({ ...baseProfile, goal: goalForEngine }) };
+
+      if (existingProfile) {
+        await base44.entities.UserProfile.update(existingProfile.id, profileData);
+      } else {
+        const created = await base44.entities.UserProfile.create(profileData);
+        setExistingProfile(created);
+      }
+
       const workouts = generateWorkoutPlans(profileData);
-      await base44.entities.WorkoutPlan.bulkCreate(workouts);
       const meals = generateMealPlans(profileData, profileData);
+      const shopping = generateShoppingList(meals);
+      const [oldMeals, oldWorkouts, oldShopping] = await Promise.all([
+        base44.entities.MealPlan.list(),
+        base44.entities.WorkoutPlan.list(),
+        base44.entities.ShoppingListItem.list(),
+      ]);
+      await Promise.all([
+        ...oldMeals.map((p) => base44.entities.MealPlan.delete(p.id)),
+        ...oldWorkouts.map((p) => base44.entities.WorkoutPlan.delete(p.id)),
+        ...oldShopping.map((item) => base44.entities.ShoppingListItem.delete(item.id)),
+      ]);
+      await base44.entities.WorkoutPlan.bulkCreate(workouts);
       await base44.entities.MealPlan.bulkCreate(meals);
-      await base44.entities.ShoppingListItem.bulkCreate(generateShoppingList(meals));
-      const today = getLocalDateString();
-      await base44.entities.WaterLog.create({ date: today, amount_ml: 0 });
-      await base44.entities.StepLog.create({ date: today, steps: 0 });
-      await base44.entities.BodyMetric.create({ date: today, weight_kg: Number(form.weight_kg) });
+      if (shopping.length) await base44.entities.ShoppingListItem.bulkCreate(shopping);
+
+      if (!existingProfile) {
+        const today = getLocalDateString();
+        await base44.entities.WaterLog.create({ date: today, amount_ml: 0 });
+        await base44.entities.StepLog.create({ date: today, steps: 0 });
+        await base44.entities.BodyMetric.create({ date: today, weight_kg: Number(form.weight_kg) });
+      }
       navigate("/");
     } finally {
       setSaving(false);
     }
   };
+
+  if (loadingProfile) return <div className="flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">Loading your ShiftFit setup…</div>;
 
   return (
     <div className="min-h-screen bg-background px-5 pb-10 pt-8">
@@ -110,6 +160,7 @@ export default function Onboarding() {
           <div className="mt-7 flex items-center gap-1.5">
             {steps.map((label, index) => <div key={label} className="flex flex-1 flex-col gap-1.5"><div className={cn("h-1.5 rounded-full transition-colors", index <= step ? "bg-primary" : "bg-secondary")} /><span className={cn("text-[9px] font-medium", index === step ? "text-foreground" : "text-muted-foreground")}>{label}</span></div>)}
           </div>
+          {existingProfile && <div className="mt-5 rounded-xl border border-primary/20 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">Editing your ShiftFit setup. Saving will rebuild your current 7-day meals and workouts.</div>}
         </header>
 
         {step === 0 && <Section title="About you" subtitle="Tell us a little about yourself so ShiftFit can build your starting plan.">
@@ -125,7 +176,7 @@ export default function Onboarding() {
           <div><ChoiceLabel label="Current activity level" /><div className="grid grid-cols-2 gap-2">{ACTIVITY.map((item) => <Choice key={item.value} active={form.activity_level === item.value} onClick={() => set("activity_level", item.value)}>{item.label}</Choice>)}</div></div>
         </Section>}
 
-        {step === 2 && <Section title="How do you work?" subtitle="This is the important ShiftFit bit — we'll use your shift pattern and start date to build your calendar around work, recovery and training.">
+        {step === 2 && <Section title="How do you work?" subtitle="We'll use your shift pattern and start date to build your calendar around work, recovery and training.">
           <div className="space-y-2">{SHIFTS.map((shift) => { const Icon = shift.icon; return <button type="button" key={shift.value} onClick={() => { set("shift_type", shift.value); set("shift_pattern", shift.pattern); }} className={cn("flex w-full items-center gap-3 rounded-2xl border p-4 text-left transition-all", form.shift_type === shift.value ? "border-primary bg-primary/10" : "border-border bg-card")}><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary"><Icon className="h-5 w-5 text-primary" /></div><div className="min-w-0 flex-1"><div className="font-semibold">{shift.label}</div><div className="text-xs text-muted-foreground">{shift.desc}</div></div><div className={cn("h-4 w-4 rounded-full border", form.shift_type === shift.value ? "border-primary bg-primary" : "border-muted-foreground")} /></button>; })}</div>
           {form.shift_type === "custom" && <Field label="Describe your shift pattern" value={form.custom_shift} onChange={(v) => set("custom_shift", v)} placeholder="e.g. 3 days, 3 nights, 4 off" />}
           <div className="rounded-2xl border border-border bg-card p-4">
@@ -142,16 +193,17 @@ export default function Onboarding() {
           <div><ChoiceLabel label="Where do you train?" /><div className="grid grid-cols-2 gap-2">{TRAINING_LOCATIONS.map(({ value, label, icon: Icon }) => <Choice key={value} active={form.training_location === value} onClick={() => set("training_location", value)}><Icon className="mr-2 inline h-4 w-4" />{label}</Choice>)}</div></div>
         </Section>}
 
-        {step === 4 && <Section title="Your ShiftFit plan is ready" subtitle="Check everything below. We'll build your 7-day plan when you start.">
+        {step === 4 && <Section title={existingProfile ? "Update your ShiftFit plan" : "Your ShiftFit plan is ready"} subtitle={existingProfile ? "Check everything below. Saving will rebuild your current 7-day meals and workouts." : "Check everything below. We'll build your 7-day plan when you start."}>
           <div className="rounded-2xl border border-border bg-card p-4 text-sm">
             <Row label="Name" value={form.full_name} /><Row label="Body" value={`${form.height_cm} cm · ${form.weight_kg} kg`} /><Row label="Goal" value={GOALS.find((g) => g.value === form.goal)?.label} /><Row label="Activity" value={ACTIVITY.find((a) => a.value === form.activity_level)?.label} /><Row label="Shift pattern" value={selectedShift.label} /><Row label="Shift starts" value={form.shift_start_date} /><Row label="Work days" value={form.work_days.map((d) => DAY_LABELS[DAYS.indexOf(d)]).join(", ")} /><Row label="Training" value={`${form.training_days_per_week} days · ${form.training_level}`} /><Row label="Training place" value={form.training_location === "gym" ? "Gym" : "Home"} />
           </div>
-          <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4"><div className="text-sm font-semibold">Ready to go?</div><p className="mt-1 text-xs text-muted-foreground">ShiftFit will calculate your targets and create your first Monday–Sunday meals and workouts.</p></div>
+          <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4"><div className="text-sm font-semibold">{existingProfile ? "Ready to update?" : "Ready to go?"}</div><p className="mt-1 text-xs text-muted-foreground">{existingProfile ? "Your targets, meals, workouts and Smart Basket will be rebuilt from these settings." : "ShiftFit will calculate your targets and create your first Monday–Sunday meals and workouts."}</p></div>
         </Section>}
 
         <div className="mt-7 flex items-center gap-3">
+          {existingProfile && step === 0 && <Button type="button" variant="outline" onClick={() => navigate("/profile")} disabled={saving}>Cancel</Button>}
           {step > 0 && <Button type="button" variant="outline" size="icon" onClick={() => setStep((s) => s - 1)} disabled={saving}><ChevronLeft className="h-4 w-4" /></Button>}
-          {step < 4 ? <Button type="button" className="flex-1" disabled={!canNext()} onClick={() => setStep((s) => s + 1)}>Continue <ChevronRight className="ml-1 h-4 w-4" /></Button> : <Button type="button" className="flex-1" disabled={saving} onClick={finish}>{saving ? "Building your plan…" : "Create my ShiftFit plan"}</Button>}
+          {step < 4 ? <Button type="button" className="flex-1" disabled={!canNext()} onClick={() => setStep((s) => s + 1)}>Continue <ChevronRight className="ml-1 h-4 w-4" /></Button> : <Button type="button" className="flex-1" disabled={saving} onClick={finish}>{saving ? "Updating your plan…" : existingProfile ? "Save & update my plan" : "Create my ShiftFit plan"}</Button>}
         </div>
       </div>
     </div>
@@ -161,5 +213,5 @@ export default function Onboarding() {
 function Section({ title, subtitle, children }) { return <section><h1 className="text-2xl font-bold tracking-tight">{title}</h1><p className="mt-1 text-sm leading-6 text-muted-foreground">{subtitle}</p><div className="mt-6 space-y-5">{children}</div></section>; }
 function ChoiceLabel({ label }) { return <Label className="text-sm font-semibold">{label}</Label>; }
 function Choice({ active, onClick, children }) { return <button type="button" onClick={onClick} className={cn("flex min-h-11 items-center justify-center rounded-xl border px-3 py-2 text-sm font-medium transition-all", active ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary text-muted-foreground")}>{children}</button>; }
-function Field({ label, value, onChange, type = "text", placeholder }) { return <div className="space-y-2"><Label>{label}</Label><Input type={type} value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} /></div>; }
+function Field({ label, value, onChange, type = "text", placeholder }) { return <div><Label>{label}</Label><Input className="mt-2" type={type} value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} /></div>; }
 function Row({ label, value }) { return <div className="flex justify-between gap-4 border-b border-border py-2 last:border-0"><span className="text-muted-foreground">{label}</span><span className="text-right font-medium capitalize">{value}</span></div>; }
