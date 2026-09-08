@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
-import { ArrowLeft, Bell, ChevronRight, CircleHelp, Database, Footprints, Moon, Shield, Smartphone, Target, UserRound, CalendarDays, LogOut, Info, X, Check } from "lucide-react";
+import { ArrowLeft, Bell, ChevronRight, CircleHelp, Database, Footprints, Moon, Shield, Smartphone, Target, UserRound, CalendarDays, LogOut, Info, X, Check, Dumbbell, Utensils, Droplets, Footprints as StepsIcon, Mail, Lock, RefreshCw } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 
 const sections = [
@@ -24,16 +24,16 @@ const sections = [
   ]},
   { title: "SUPPORT", items: [
     { icon: CircleHelp, title: "Help & Support", description: "Get help using ShiftFit", action: "support" },
-    { icon: Info, title: "About ShiftFit", description: "Version and app information", action: "about" },
+    { icon: Info, title: "About ShiftFit", description: "Version, features and app information", action: "about" },
   ]},
 ];
 
 const modalCopy = {
-  notifications: { title: "Notifications", description: "Choose which ShiftFit reminders you want to receive." },
-  appearance: { title: "Appearance", description: "ShiftFit V2 keeps the same clean theme across the app. Your preference is saved on this device." },
-  privacy: { title: "Data & Privacy", description: "Your profile, plans and progress data are used to power your ShiftFit experience. You stay in control of the data stored by the app." },
-  account: { title: "Account & Sync", description: "Your ShiftFit account is connected to the current signed-in session. Device connections are managed separately." },
-  support: { title: "Help & Support", description: "Need help? You can contact the ShiftFit team from here while the full support centre is being built." },
+  notifications: { title: "Notifications", description: "Choose the reminders that fit around your shifts. Preferences are saved on this device." },
+  appearance: { title: "Appearance", description: "Control how ShiftFit feels while keeping the core V2 visual identity consistent." },
+  privacy: { title: "Data & Privacy", description: "Understand what ShiftFit uses to generate your plans and track your progress." },
+  account: { title: "Account & Sync", description: "Manage your signed-in account and see how your ShiftFit data is currently connected." },
+  support: { title: "Help & Support", description: "Find quick answers first, then contact the ShiftFit team if you still need help." },
   about: { title: "About ShiftFit", description: "ShiftFit V2 is your shift-friendly fitness, nutrition and progress companion." },
 };
 
@@ -42,6 +42,12 @@ export default function Settings() {
   const [activeModal, setActiveModal] = useState(null);
   const [notifications, setNotifications] = useState(() => localStorage.getItem("shiftfit_notifications") !== "off");
   const [reducedMotion, setReducedMotion] = useState(() => localStorage.getItem("shiftfit_reduced_motion") === "on");
+  const [notificationPrefs, setNotificationPrefs] = useState(() => ({
+    workouts: localStorage.getItem("shiftfit_notify_workouts") !== "off",
+    meals: localStorage.getItem("shiftfit_notify_meals") !== "off",
+    water: localStorage.getItem("shiftfit_notify_water") !== "off",
+    progress: localStorage.getItem("shiftfit_notify_progress") !== "off",
+  }));
   const [email, setEmail] = useState("");
 
   useEffect(() => {
@@ -54,6 +60,12 @@ export default function Settings() {
     const next = !notifications;
     setNotifications(next);
     localStorage.setItem("shiftfit_notifications", next ? "on" : "off");
+  };
+
+  const togglePreference = (key) => {
+    const next = !notificationPrefs[key];
+    setNotificationPrefs((prev) => ({ ...prev, [key]: next }));
+    localStorage.setItem(`shiftfit_notify_${key}`, next ? "on" : "off");
   };
 
   const toggleReducedMotion = () => {
@@ -103,51 +115,65 @@ export default function Settings() {
         <button type="button" onClick={logout} className="flex w-full items-center justify-center gap-2 rounded-2xl border border-border bg-card px-4 py-3.5 text-sm font-bold text-destructive transition-colors hover:bg-destructive/10"><LogOut className="h-4 w-4" />Log out</button>
       </section>
       <div className="pb-4 text-center text-[10px] text-muted-foreground">ShiftFit V2 · Settings</div>
-
-      {activeModal && <SettingsModal action={activeModal} notifications={notifications} onToggleNotifications={toggleNotifications} reducedMotion={reducedMotion} onToggleReducedMotion={toggleReducedMotion} email={email} onClose={() => setActiveModal(null)} />}
+      {activeModal && <SettingsModal action={activeModal} notifications={notifications} onToggleNotifications={toggleNotifications} notificationPrefs={notificationPrefs} onTogglePreference={togglePreference} reducedMotion={reducedMotion} onToggleReducedMotion={toggleReducedMotion} email={email} onClose={() => setActiveModal(null)} />}
     </AppLayout>
   );
 }
 
-function SettingsModal({ action, notifications, onToggleNotifications, reducedMotion, onToggleReducedMotion, email, onClose }) {
+function SettingsModal({ action, notifications, onToggleNotifications, notificationPrefs, onTogglePreference, reducedMotion, onToggleReducedMotion, email, onClose }) {
   const copy = modalCopy[action];
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center">
-      <div className="w-full max-w-md rounded-3xl border border-border bg-background p-5 shadow-2xl">
+      <div className="max-h-[88vh] w-full max-w-md overflow-y-auto rounded-3xl border border-border bg-background p-5 shadow-2xl">
         <div className="flex items-start gap-3">
           <div className="min-w-0 flex-1"><h2 className="text-lg font-bold">{copy.title}</h2><p className="mt-1 text-sm leading-5 text-muted-foreground">{copy.description}</p></div>
           <button type="button" onClick={onClose} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-secondary" aria-label="Close"><X className="h-4 w-4" /></button>
         </div>
 
         {action === "notifications" && <div className="mt-5 space-y-3">
-          <SettingToggle title="ShiftFit notifications" description="Allow reminder and activity notifications when the feature is available." enabled={notifications} onClick={onToggleNotifications} />
-          <div className="rounded-2xl bg-secondary/60 p-3 text-[11px] leading-5 text-muted-foreground">Your choice is saved on this device. Push delivery will be connected when native notifications are enabled.</div>
+          <SettingToggle title="ShiftFit notifications" description="Master switch for ShiftFit reminders." enabled={notifications} onClick={onToggleNotifications} />
+          <SettingToggle icon={Dumbbell} title="Workout reminders" description="Remind me about scheduled training sessions." enabled={notificationPrefs.workouts && notifications} onClick={() => onTogglePreference("workouts")} />
+          <SettingToggle icon={Utensils} title="Meal reminders" description="Remind me to stay on track with planned meals." enabled={notificationPrefs.meals && notifications} onClick={() => onTogglePreference("meals")} />
+          <SettingToggle icon={Droplets} title="Water reminders" description="Keep hydration visible during the day." enabled={notificationPrefs.water && notifications} onClick={() => onTogglePreference("water")} />
+          <SettingToggle icon={StepsIcon} title="Progress reminders" description="Prompt me to check steps, measurements and progress." enabled={notificationPrefs.progress && notifications} onClick={() => onTogglePreference("progress")} />
+          <InfoBox>Notification preferences are stored locally. Push delivery will be connected when native notification support is enabled.</InfoBox>
         </div>}
 
         {action === "appearance" && <div className="mt-5 space-y-3">
-          <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4"><div className="text-sm font-semibold">ShiftFit V2 theme</div><div className="mt-1 text-xs text-muted-foreground">Active across the app.</div><div className="mt-3 flex items-center gap-2 text-xs font-semibold text-primary"><Check className="h-4 w-4" /> Current design</div></div>
-          <SettingToggle title="Reduced motion" description="Reduce non-essential interface movement on this device." enabled={reducedMotion} onClick={onToggleReducedMotion} />
+          <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4"><div className="text-sm font-semibold">ShiftFit V2 design</div><div className="mt-1 text-xs leading-5 text-muted-foreground">The current V2 theme is used consistently across Home, Meals, Train, Progress and Settings.</div><div className="mt-3 flex items-center gap-2 text-xs font-semibold text-primary"><Check className="h-4 w-4" /> Current design</div></div>
+          <SettingToggle icon={Moon} title="Reduced motion" description="Reduce non-essential interface movement on this device." enabled={reducedMotion} onClick={onToggleReducedMotion} />
+          <InfoBox>More appearance controls can be added later without changing the core V2 design system.</InfoBox>
         </div>}
 
         {action === "privacy" && <div className="mt-5 space-y-3">
-          <div className="rounded-2xl border border-border bg-card p-4"><div className="text-sm font-semibold">What ShiftFit stores</div><p className="mt-2 text-xs leading-5 text-muted-foreground">Your profile details, nutrition targets, meal plans, workout plans and progress entries are stored for app functionality.</p></div>
-          <div className="rounded-2xl bg-secondary/60 p-3 text-[11px] leading-5 text-muted-foreground">Full export and account deletion controls will be added before production launch.</div>
+          <InfoCard icon={UserRound} title="Profile information" text="Personal details, goals, shift pattern, work days and food preferences are used to personalise your plans." />
+          <InfoCard icon={Utensils} title="Nutrition & meals" text="Your calorie and macro targets are used to generate the Monday–Sunday meal plan and Smart Basket." />
+          <InfoCard icon={Dumbbell} title="Training & progress" text="Workout plans, logged measurements, steps and other progress entries support your fitness tracking." />
+          <InfoCard icon={Smartphone} title="Connected devices" text="Device connections are managed separately. A connection only becomes active when you authorise it." />
+          <InfoBox>Before production launch, ShiftFit should provide dedicated data export, deletion and consent controls.</InfoBox>
         </div>}
 
         {action === "account" && <div className="mt-5 space-y-3">
-          <div className="rounded-2xl border border-border bg-card p-4"><div className="text-xs uppercase tracking-wider text-muted-foreground">Signed-in account</div><div className="mt-1 break-all text-sm font-semibold">{email || "Current ShiftFit account"}</div></div>
-          <div className="rounded-2xl border border-border bg-card p-4"><div className="text-sm font-semibold">Sync status</div><div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground"><span className="h-2 w-2 rounded-full bg-primary" /> Local app data ready</div></div>
-          <div className="rounded-2xl bg-secondary/60 p-3 text-[11px] leading-5 text-muted-foreground">Apple Health, Garmin, Fitbit and Strava connections are managed from Watches & Trackers.</div>
+          <div className="rounded-2xl border border-border bg-card p-4"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary"><Mail className="h-4 w-4" /></div><div className="min-w-0"><div className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">Signed-in account</div><div className="mt-1 break-all text-sm font-semibold">{email || "Current ShiftFit account"}</div></div></div></div>
+          <InfoCard icon={RefreshCw} title="Plan sync" text="Your saved profile, meal plans, workout plans and shopping data are used together so personalisation stays consistent." />
+          <InfoCard icon={Smartphone} title="Device sync" text="Apple Health, Garmin, Fitbit and Strava are managed from Watches & Trackers." />
+          <InfoBox>Account sync will expand as ShiftFit moves toward full cloud synchronisation. Your current app session remains available.</InfoBox>
         </div>}
 
         {action === "support" && <div className="mt-5 space-y-3">
-          <a href="mailto:support@shiftfit.app" className="flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground">Email ShiftFit support</a>
-          <div className="rounded-2xl bg-secondary/60 p-3 text-[11px] leading-5 text-muted-foreground">For account, plan or app issues, include what you were doing and what happened so we can reproduce it.</div>
+          <div className="rounded-2xl border border-border bg-card p-4"><div className="text-sm font-semibold">How do I change my plan?</div><p className="mt-1 text-xs leading-5 text-muted-foreground">Open Shift Schedule, Goal & Nutrition or Personal Details. Save your changes and ShiftFit will rebuild the personalised plan where required.</p></div>
+          <div className="rounded-2xl border border-border bg-card p-4"><div className="text-sm font-semibold">How do meal swaps work?</div><p className="mt-1 text-xs leading-5 text-muted-foreground">Use the swap action on a meal to choose another suitable option while keeping your personal preferences in mind.</p></div>
+          <div className="rounded-2xl border border-border bg-card p-4"><div className="text-sm font-semibold">Why is a Smart Basket price missing?</div><p className="mt-1 text-xs leading-5 text-muted-foreground">ShiftFit only shows verified comparable pack prices. A blank price means we do not currently have a verified match rather than guessing a price.</p></div>
+          <a href="mailto:support@shiftfit.app" className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground"><Mail className="h-4 w-4" />Email ShiftFit support</a>
         </div>}
 
         {action === "about" && <div className="mt-5 space-y-3">
           <div className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4"><div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-lg font-bold text-primary-foreground">S</div><div><div className="font-bold">SHIFT FIT</div><div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Shift smart. Train smart.</div></div></div>
-          <div className="rounded-2xl border border-border bg-card p-4 text-sm"><div className="flex justify-between py-1"><span className="text-muted-foreground">Version</span><span className="font-semibold">V2</span></div><div className="flex justify-between py-1"><span className="text-muted-foreground">Build</span><span className="font-semibold">Production</span></div></div>
+          <div className="rounded-2xl border border-border bg-card p-4 text-sm"><div className="flex justify-between py-1"><span className="text-muted-foreground">Version</span><span className="font-semibold">V2</span></div><div className="flex justify-between py-1"><span className="text-muted-foreground">Status</span><span className="font-semibold">Active development</span></div></div>
+          <InfoCard icon={Target} title="Personalised plans" text="Goals, nutrition targets, shift patterns and food preferences drive your plan." />
+          <InfoCard icon={Utensils} title="Smart Basket" text="Builds from your actual weekly meals and uses verified supermarket pack prices where available." />
+          <InfoCard icon={Dumbbell} title="Train & Progress" text="Keep workouts, activity and body measurements together so you can see your progress over time." />
+          <InfoBox>ShiftFit V2 is actively being developed. Features shown in the app may continue to improve before the production launch.</InfoBox>
         </div>}
 
         <button type="button" onClick={onClose} className="mt-5 w-full rounded-2xl bg-secondary px-4 py-3 text-sm font-bold">Done</button>
@@ -156,9 +182,18 @@ function SettingsModal({ action, notifications, onToggleNotifications, reducedMo
   );
 }
 
-function SettingToggle({ title, description, enabled, onClick }) {
+function SettingToggle({ icon: Icon, title, description, enabled, onClick }) {
   return <button type="button" onClick={onClick} className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-4 text-left">
+    {Icon && <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Icon className="h-4 w-4" /></div>}
     <div className="min-w-0 flex-1"><div className="text-sm font-semibold">{title}</div><div className="mt-1 text-xs leading-5 text-muted-foreground">{description}</div></div>
     <div className={`flex h-7 w-12 shrink-0 items-center rounded-full p-1 transition-colors ${enabled ? "bg-primary justify-end" : "bg-secondary justify-start"}`}><div className="h-5 w-5 rounded-full bg-background shadow-sm" /></div>
   </button>;
+}
+
+function InfoCard({ icon: Icon, title, text }) {
+  return <div className="rounded-2xl border border-border bg-card p-4"><div className="flex items-start gap-3"><div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Icon className="h-4 w-4" /></div><div><div className="text-sm font-semibold">{title}</div><p className="mt-1 text-xs leading-5 text-muted-foreground">{text}</p></div></div></div>;
+}
+
+function InfoBox({ children }) {
+  return <div className="rounded-2xl bg-secondary/60 p-3 text-[11px] leading-5 text-muted-foreground">{children}</div>;
 }
