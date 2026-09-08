@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
+import { supabase } from "@/lib/supabaseClient";
 import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { computeTargets, generateMealPlans, generateShoppingList, generateWorkoutPlans } from "@/lib/fitnessUtils";
-import { ArrowLeft, Save, RefreshCw, UserRound, Target, Clock3 } from "lucide-react";
+import { ArrowLeft, Save, RefreshCw, UserRound, Target, Clock3, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const GOALS = [
@@ -21,6 +22,7 @@ export default function Profile() {
   const [form, setForm] = useState(null);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
     base44.entities.UserProfile.list().then((rows) => {
@@ -48,27 +50,32 @@ export default function Profile() {
       if (regenerate) {
         const meals = generateMealPlans({ ...clean, ...targets }, targets);
         const workouts = generateWorkoutPlans({ ...clean, ...targets });
-
-        // Replace persisted plans instead of updating whatever legacy rows happen to exist.
-        // This guarantees the live app cannot keep showing meals from an older generator.
         const existingMeals = await base44.entities.MealPlan.list();
         await Promise.all(existingMeals.map((p) => base44.entities.MealPlan.delete(p.id)));
         await base44.entities.MealPlan.bulkCreate(meals);
-
         const existingWorkouts = await base44.entities.WorkoutPlan.list();
         await Promise.all(existingWorkouts.map((p) => base44.entities.WorkoutPlan.delete(p.id)));
         await base44.entities.WorkoutPlan.bulkCreate(workouts);
-
-        // The basket must represent this exact newly generated 7-day plan.
         const oldShopping = await base44.entities.ShoppingListItem.list();
         await Promise.all(oldShopping.map((item) => base44.entities.ShoppingListItem.delete(item.id)));
         const list = generateShoppingList(meals);
         if (list.length) await base44.entities.ShoppingListItem.bulkCreate(list);
-
         setMessage("Saved — your full 7-day plan has been rebuilt.");
       } else setMessage("Profile saved.");
     } catch (e) { setMessage("Couldn’t save your changes. Try again."); }
     finally { setSaving(false); }
+  };
+
+  const logout = async () => {
+    if (!supabase) return;
+    setLoggingOut(true);
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      setMessage("Couldn’t log out. Try again.");
+      setLoggingOut(false);
+      return;
+    }
+    navigate("/login", { replace: true });
   };
 
   return <AppLayout>
@@ -90,10 +97,11 @@ export default function Profile() {
       <div><Label>Work days</Label><div className="mt-2 grid grid-cols-7 gap-1.5">{["sun","mon","tue","wed","thu","fri","sat"].map((d) => <button key={d} onClick={() => set("work_days", (form.work_days || []).includes(d) ? form.work_days.filter((x) => x !== d) : [...(form.work_days || []), d])} className={cn("rounded-xl py-2 text-[11px] font-semibold", (form.work_days || []).includes(d) ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground")}>{d[0].toUpperCase()}</button>)}</div></div>
     </Section>
     {message && <div className="mb-3 rounded-xl border border-primary/30 bg-primary/10 p-3 text-xs text-primary">{message}</div>}
-    <div className="space-y-2 pb-4"><Button className="w-full" disabled={saving} onClick={() => save(false)}><Save className="mr-2 h-4 w-4" />Save profile</Button><Button variant="outline" className="w-full" disabled={saving} onClick={() => save(true)}><RefreshCw className="mr-2 h-4 w-4" />Save & regenerate my 7-day plan</Button></div>
+    <div className="space-y-2 pb-4"><Button className="w-full" disabled={saving} onClick={() => save(false)}><Save className="mr-2 h-4 w-4" />Save profile</Button><Button variant="outline" className="w-full" disabled={saving} onClick={() => save(true)}><RefreshCw className="mr-2 h-4 w-4" />Save & regenerate my 7-day plan</Button><Button variant="outline" className="w-full" disabled={saving || loggingOut} onClick={logout}><LogOut className="mr-2 h-4 w-4" />{loggingOut ? "Logging out…" : "Log out"}</Button></div>
   </AppLayout>;
 }
 
 function Section({ icon: Icon, title, subtitle, children }) { return <section className="mb-4 rounded-2xl border border-border bg-card p-4"><div className="mb-4 flex items-center gap-3"><div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary"><Icon className="h-4 w-4" /></div><div><h2 className="text-sm font-bold">{title}</h2><p className="text-[11px] text-muted-foreground">{subtitle}</p></div></div><div className="space-y-4">{children}</div></section>; }
 function Field({ label, value, onChange, type = "text", select, options = [] }) { return <div><Label>{label}</Label>{select ? <select className="mt-2 flex h-10 w-full rounded-xl border border-input bg-secondary px-3 text-sm" value={value} onChange={(e) => onChange(e.target.value)}>{options.map((x) => <option key={x} value={x}>{x.replaceAll("_", " ")}</option>)}</select> : <Input className="mt-2" type={type} value={value} onChange={(e) => onChange(e.target.value)} />}</div>; }
-function Splash() { return <div className="flex min-h-screen items-center justify-center bg-background"><div className="h-8 w-8 animate-spin rounded-full border-2 border-secondary border-t-primary" /></div>; }
+function Splash() { return <div className="flex min-h-screen items-center justify-center bg-background"><div className="h-8 w-8 animate-spin rounded-full border-2 border-secondary border-t-primary" /></div>;
+}
