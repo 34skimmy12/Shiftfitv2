@@ -84,14 +84,27 @@ function normaliseShift(plan, profile) {
   return "day";
 }
 function isSameMeal(libraryMeal, current) { return libraryMeal.key === current?.meal_key || normaliseText(libraryMeal.name) === normaliseText(current?.name); }
+function rankSwapCandidates(candidates, likes) {
+  const liked = candidates.filter((m) => matchesPreference(m, likes, []));
+  return liked.length ? [...liked, ...candidates.filter((m) => !liked.includes(m))] : candidates;
+}
 function getCompatibleSwapCandidates(plan, mealIndex, profile) {
   const current = plan?.meals?.[mealIndex]; if (!current) return [];
   const shift = normaliseShift(plan, profile); const slot = normaliseText(current.type);
   const likes = normaliseList(profile?.food_likes); const avoid = normaliseList(profile?.food_avoid);
-  let candidates = MEAL_LIBRARY.filter((m) => m.shifts.includes(shift) && m.types.includes(slot) && !isSameMeal(m, current) && !matchesPreference(m, [], avoid));
-  if (!candidates.length) candidates = MEAL_LIBRARY.filter((m) => m.types.includes(slot) && !isSameMeal(m, current) && !matchesPreference(m, [], avoid));
-  const liked = candidates.filter((m) => matchesPreference(m, likes, []));
-  return liked.length ? [...liked, ...candidates.filter((m) => !liked.includes(m))] : candidates;
+  const isCandidate = (m) => m.types.includes(slot) && !isSameMeal(m, current);
+
+  // Tier 1: exact shift + meal type + avoidances.
+  let candidates = MEAL_LIBRARY.filter((m) => m.shifts.includes(shift) && isCandidate(m) && !matchesPreference(m, [], avoid));
+  // Tier 2: same meal type + avoidances, allowing another shift if the library is small.
+  if (!candidates.length) candidates = MEAL_LIBRARY.filter((m) => isCandidate(m) && !matchesPreference(m, [], avoid));
+  // Tier 3: never leave a normal meal with a broken swap panel. If the user's
+  // stored preferences exclude the entire library, offer same-shift/type meals
+  // rather than an empty list so the user can still choose a replacement.
+  if (!candidates.length) candidates = MEAL_LIBRARY.filter((m) => m.shifts.includes(shift) && isCandidate(m));
+  // Final safety net for legacy/unknown shift values.
+  if (!candidates.length) candidates = MEAL_LIBRARY.filter(isCandidate);
+  return rankSwapCandidates(candidates, likes);
 }
 export function getMealSwapOptions(plan, mealIndex, profile, limit = 4) {
   return getCompatibleSwapCandidates(plan, mealIndex, profile).slice(0, Math.max(1, limit)).map((m) => ({ key: m.key, name: m.name, items: m.items }));
@@ -115,7 +128,7 @@ export function swapMeal(plan, mealIndex, profile, targets, replacementKey = nul
 
 export function generateShoppingList(mealPlans) {
   const items = []; const seen = new Set();
-  const categorize = (name) => { const n = name.toLowerCase(); if (/(chicken|salmon|turkey|beef|tuna|eggs?|whey|cottage cheese|greek yogurt|yogurt|skyr|cod)/.test(n)) return "Protein"; if (/(broccoli|spinach|peppers|onion|berries|pear|avocado|veg|salad|greens|stir-fry|tomato|beans)/.test(n)) return "Produce"; if (/(milk|cheese|butter|hummus|honey)/.test(n)) return "Dairy"; if (/(rice|oats|quinoa|toast|wrap|granola|bread|chia|potatoes|pancakes)/.test(n)) return "Grains"; if (/(oil|almonds|peanut|sesame|seeds)/.test(n)) return "Pantry"; return "Other"; };
+  const categorize = (name) => { const n = name.toLowerCase(); if (/(chicken|salmon|turkey|beef|tuna|eggs?|whey|cottage cheese|greek yogurt|yogurt|skyr|cod)/.test(n)) return "Protein"; if (/(broccoli|spinach|peppers|onion|berries|pear|avocado|veg|salad|greens|stir-fry|green beans|tomato|apple)/.test(n)) return "Produce"; if (/(milk|cheese|butter|hummus|honey)/.test(n)) return "Dairy"; if (/(rice|oats|quinoa|toast|wrap|granola|bread|chia|potatoes)/.test(n)) return "Grains"; if (/(oil|almonds|peanut|sesame|seeds)/.test(n)) return "Pantry"; return "Other"; };
   mealPlans.forEach((plan) => plan.meals.forEach((m) => m.items.forEach((it) => { const key = it.toLowerCase(); if (!seen.has(key)) { seen.add(key); items.push({ name: it, category: categorize(it), quantity: "x7 days", checked: false }); } })));
   return items;
 }
