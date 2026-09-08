@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ChevronRight, ChevronLeft, Sun, Coffee, Dumbbell, Home, Clock3, CalendarDays } from "lucide-react";
+import { ChevronRight, ChevronLeft, ArrowLeft, Sun, Coffee, Dumbbell, Home, Clock3, CalendarDays } from "lucide-react";
 import { computeTargets, generateWorkoutPlans, generateMealPlans, generateShoppingList } from "@/lib/fitnessUtils";
 import { cn } from "@/lib/utils";
 
@@ -55,7 +55,10 @@ const DEFAULT_FORM = () => ({
 
 export default function Onboarding() {
   const navigate = useNavigate();
-  const [step, setStep] = useState(0);
+  const [searchParams] = useSearchParams();
+  const requestedStep = Number(searchParams.get("step"));
+  const fromSettings = searchParams.get("from") === "settings";
+  const [step, setStep] = useState([0, 1, 2, 3, 4].includes(requestedStep) ? requestedStep : 0);
   const [saving, setSaving] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [existingProfile, setExistingProfile] = useState(null);
@@ -141,7 +144,7 @@ export default function Onboarding() {
         await base44.entities.StepLog.create({ date: today, steps: 0 });
         await base44.entities.BodyMetric.create({ date: today, weight_kg: Number(form.weight_kg) });
       }
-      navigate(existingProfile ? "/profile" : "/");
+      navigate(fromSettings ? "/settings" : existingProfile ? "/profile" : "/");
     } finally {
       setSaving(false);
     }
@@ -153,9 +156,12 @@ export default function Onboarding() {
     <div className="min-h-screen bg-background px-5 pb-10 pt-8">
       <div className="mx-auto max-w-md">
         <header className="mb-7">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-primary-foreground font-bold">S</div>
-            <div><div className="text-lg font-bold tracking-tight">SHIFT FIT</div><div className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Shift smart. Train smart.</div></div>
+          <div className="mb-5 flex items-center gap-3">
+            {fromSettings && <button type="button" onClick={() => navigate("/settings")} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-secondary" aria-label="Back to Settings"><ArrowLeft className="h-4 w-4" /></button>}
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-primary-foreground font-bold">S</div>
+              <div><div className="text-lg font-bold tracking-tight">SHIFT FIT</div><div className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Shift smart. Train smart.</div></div>
+            </div>
           </div>
           <div className="mt-7 flex items-center gap-1.5">
             {steps.map((label, index) => <div key={label} className="flex flex-1 flex-col gap-1.5"><div className={cn("h-1.5 rounded-full transition-colors", index <= step ? "bg-primary" : "bg-secondary")} /><span className={cn("text-[9px] font-medium", index === step ? "text-foreground" : "text-muted-foreground")}>{label}</span></div>)}
@@ -201,7 +207,8 @@ export default function Onboarding() {
         </Section>}
 
         <div className="mt-7 flex items-center gap-3">
-          {existingProfile && step === 0 && <Button type="button" variant="outline" onClick={() => navigate("/profile")} disabled={saving}>Cancel</Button>}
+          {fromSettings && <Button type="button" variant="outline" onClick={() => navigate("/settings")} disabled={saving}><ArrowLeft className="mr-2 h-4 w-4" />Settings</Button>}
+          {!fromSettings && existingProfile && step === 0 && <Button type="button" variant="outline" onClick={() => navigate("/profile")} disabled={saving}>Cancel</Button>}
           {step > 0 && <Button type="button" variant="outline" size="icon" onClick={() => setStep((s) => s - 1)} disabled={saving}><ChevronLeft className="h-4 w-4" /></Button>}
           {step < 4 ? <Button type="button" className="flex-1" disabled={!canNext()} onClick={() => setStep((s) => s + 1)}>Continue <ChevronRight className="ml-1 h-4 w-4" /></Button> : <Button type="button" className="flex-1" disabled={saving} onClick={finish}>{saving ? "Updating your plan…" : existingProfile ? "Save & update my plan" : "Create my ShiftFit plan"}</Button>}
         </div>
