@@ -5,7 +5,7 @@ import { useProfile } from "@/hooks/useProfile";
 import AppLayout from "@/components/AppLayout";
 import ProgressRing from "@/components/ProgressRing";
 import { todayStr } from "@/lib/fitnessUtils";
-import { Plus, TrendingDown, Activity, Ruler } from "lucide-react";
+import { Plus, TrendingDown, Activity, Ruler, ArrowLeft } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 
 export default function Progress() {
@@ -27,7 +27,7 @@ export default function Progress() {
     { icon: Activity, label: "Body Fat", value: latest?.body_fat_pct ? `${latest.body_fat_pct}%` : "—", color: "hsl(250 80% 64%)" },
     { icon: Ruler, label: "Waist", value: latest?.waist_cm ? `${latest.waist_cm} cm` : "—", color: "hsl(190 90% 50%)" },
   ];
-  return <AppLayout><header className="mb-6 flex items-start justify-between"><div><h1 className="text-2xl font-bold tracking-tight">Progress</h1><p className="text-sm text-muted-foreground">Track your body metrics over time</p></div><button onClick={()=>setShowAdd(v=>!v)} className="no-tap-highlight flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground"><Plus className="h-5 w-5"/></button></header>
+  return <AppLayout><header className="mb-6 flex items-center gap-3"><button onClick={()=>navigate("/settings")} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-secondary" aria-label="Back to Settings"><ArrowLeft className="h-4 w-4"/></button><div className="min-w-0 flex-1"><h1 className="text-2xl font-bold tracking-tight">Progress</h1><p className="text-sm text-muted-foreground">Track your body metrics over time</p></div><button onClick={()=>setShowAdd(v=>!v)} aria-label="Add progress entry" className="no-tap-highlight flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground"><Plus className="h-5 w-5"/></button></header>
     {showAdd && <div className="mb-5 rounded-2xl border border-border bg-card p-4"><div className="mb-3 text-sm font-semibold">Log today's metrics</div><div className="grid grid-cols-3 gap-2"><InField label="Weight (kg)" value={form.weight_kg} onChange={v=>setForm(f=>({...f,weight_kg:v}))}/><InField label="Body fat %" value={form.body_fat_pct} onChange={v=>setForm(f=>({...f,body_fat_pct:v}))}/><InField label="Waist (cm)" value={form.waist_cm} onChange={v=>setForm(f=>({...f,waist_cm:v}))}/></div><button onClick={addMetric} className="no-tap-highlight mt-3 w-full rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground">Save</button></div>}
     <div className="mb-5 grid grid-cols-3 gap-3">{stats.map(s=>{const Icon=s.icon;return <div key={s.label} className="rounded-2xl border border-border bg-card p-3 text-center"><Icon className="mx-auto mb-1 h-4 w-4" style={{color:s.color}}/><div className="text-xs text-muted-foreground">{s.label}</div><div className="text-base font-bold">{s.value}</div>{s.delta!==undefined&&s.delta!==0&&<div className={`text-[10px] ${s.delta<0?"text-primary":"text-destructive"}`}>{s.delta<0?"▼":"▲"} {Math.abs(s.delta).toFixed(1)}kg</div>}</div>})}</div>
     <div className="mb-5 flex items-center justify-center gap-6 rounded-2xl border border-border bg-card p-5"><ProgressRing value={Math.min(metrics.length,4)} max={4} color="hsl(84 81% 52%)" label={`${metrics.length}/30`} sublabel="logs" size={100}/><div><div className="text-xs text-muted-foreground">Your goal</div><div className="text-lg font-bold capitalize">{profile.goal==="lose"?"Lose Fat":profile.goal==="gain"?"Build Muscle":"Maintain"}</div><div className="text-xs text-muted-foreground">Target: {profile.calorie_target} kcal/day</div></div></div>
@@ -35,4 +35,4 @@ export default function Progress() {
   </AppLayout>;
 }
 function InField({label,value,onChange}){return <div className="space-y-1"><label className="text-[10px] text-muted-foreground">{label}</label><input type="number" value={value} onChange={e=>onChange(e.target.value)} className="w-full rounded-xl border border-border bg-secondary px-2 py-2 text-sm outline-none focus:border-primary"/></div>}
-function Splash(){return <div className="flex min-h-screen items-center justify-center bg-background"><div className="h-8 w-8 animate-spin rounded-full border-2 border-secondary border-t-primary"/></div>}
+function Splash(){return <div className="flex min-h-screen items-center justify-center bg-background"><div className="h-8 w-8 animate-spin rounded-full border-2 border-secondary border-t-primary" /></div>}
