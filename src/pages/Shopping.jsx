@@ -3,6 +3,7 @@ import AppLayout from "@/components/AppLayout";
 import { base44 } from "@/api/base44Client";
 import { Check, ChevronRight, ShoppingCart, Sparkles, WalletCards } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { generateSmartBasket } from "@/lib/shoppingUtils";
 
 const STORES = [
   { name: "Aldi", accent: "Best value", benchmark: 1.0 },
@@ -17,12 +18,43 @@ function money(value) {
   return `£${value.toFixed(2)}`;
 }
 
+function basketKey(item) {
+  return `${String(item.name || "").trim().toLowerCase()}|${String(item.category || "Other").trim().toLowerCase()}`;
+}
+
 export default function Shopping() {
   const [items, setItems] = useState([]);
   const [tab, setTab] = useState("list");
 
   useEffect(() => {
-    base44.entities.ShoppingListItem.list().then(setItems).catch(() => setItems([]));
+    async function loadBasket() {
+      try {
+        const [mealPlans, savedItems] = await Promise.all([
+          base44.entities.MealPlan.list(),
+          base44.entities.ShoppingListItem.list(),
+        ]);
+
+        const generated = generateSmartBasket(mealPlans);
+        if (!generated.length) {
+          setItems(savedItems || []);
+          return;
+        }
+
+        const checkedByKey = new Map((savedItems || []).map((item) => [basketKey(item), Boolean(item.checked)]));
+        const nextItems = generated.map((item) => ({
+          ...item,
+          checked: checkedByKey.get(basketKey(item)) || false,
+        }));
+
+        await Promise.all((savedItems || []).map((item) => base44.entities.ShoppingListItem.delete(item.id)));
+        const persisted = await base44.entities.ShoppingListItem.bulkCreate(nextItems);
+        setItems(persisted);
+      } catch {
+        base44.entities.ShoppingListItem.list().then(setItems).catch(() => setItems([]));
+      }
+    }
+
+    loadBasket();
   }, []);
 
   const toggle = async (item) => {
@@ -39,7 +71,6 @@ export default function Shopping() {
   const estimatedBase = Math.max(25, items.length * 2.35);
   const storeEstimates = STORES.map((store) => ({ ...store, total: estimatedBase * store.benchmark }));
   const cheapest = storeEstimates[0];
-  const bestFullRange = storeEstimates[2];
 
   return (
     <AppLayout>
@@ -73,7 +104,7 @@ export default function Shopping() {
                   <span className="text-xs font-bold uppercase tracking-[0.14em]">Best basket</span>
                 </div>
                 <h2 className="text-lg font-bold">Start with Aldi</h2>
-                <p className="mt-1 text-xs leading-5 text-muted-foreground">Based on your current list and a benchmark estimate. Live product pricing is not connected yet.</p>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">Based on your current weekly basket and a benchmark estimate. Live product pricing is not connected yet.</p>
               </div>
               <div className="text-right">
                 <p className="text-2xl font-black text-primary">{money(cheapest.total)}</p>
@@ -128,7 +159,7 @@ export default function Shopping() {
             </div>
           </section>
 
-          <p className="px-2 text-center text-[10px] leading-4 text-muted-foreground">The supermarket figures above are planning estimates, not live prices. Actual prices and availability vary by store and date. UK grocery comparisons show that the cheapest retailer can change by basket and loyalty pricing. citeturn0search0</p>
+          <p className="px-2 text-center text-[10px] leading-4 text-muted-foreground">The supermarket figures above are planning estimates, not live prices. Actual prices and availability vary by store and date.</p>
         </div>
       ) : (
         <div className="space-y-4">
