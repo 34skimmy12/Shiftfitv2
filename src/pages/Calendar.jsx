@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { base44 } from "@/api/base44Client";
 import { CalendarDays, ChevronRight } from "lucide-react";
@@ -54,6 +55,7 @@ function startOfWeek(date) {
 }
 
 export default function Calendar() {
+  const navigate = useNavigate();
   const { profile, loading } = useProfile();
   const [plans, setPlans] = useState([]);
   useEffect(() => { if (profile) base44.entities.WorkoutPlan.list().then(setPlans); }, [profile]);
@@ -73,9 +75,9 @@ export default function Calendar() {
       const shift = shiftForDate(profile, dateStr);
       const [label, sub] = meta[shift];
       const workout = plans.find(p => p.day_index === ((weekday + 6) % 7));
-      return <div key={dateStr} className={cn("rounded-2xl border p-4", dateStr === todayDate ? "border-primary/50 bg-primary/5" : "border-border bg-card")}>
-        <div className="flex items-center gap-3"><div className="w-12 text-center"><div className="text-[10px] uppercase text-muted-foreground">{WEEKDAY_LABELS[weekday].slice(0,3)}</div><div className="text-lg font-bold">{date.getDate()}</div></div><div className="h-10 w-px bg-border"/><div className="min-w-0 flex-1"><div className="flex items-center gap-2"><span className="text-sm font-bold">{label}</span>{dateStr === todayDate && <span className="rounded-full bg-primary px-2 py-0.5 text-[8px] font-bold text-primary-foreground">TODAY</span>}</div><p className="text-xs text-muted-foreground">{sub}{workout ? ` · ${workout.title}` : ""}</p></div><ChevronRight className="h-4 w-4 text-muted-foreground" /></div>
-      </div>;
+      return <button key={dateStr} type="button" onClick={() => navigate("/train")} className={cn("flex w-full items-center gap-3 rounded-2xl border p-4 text-left transition-colors hover:bg-secondary/40", dateStr === todayDate ? "border-primary/50 bg-primary/5" : "border-border bg-card")} aria-label={`Open training for ${WEEKDAY_LABELS[weekday]}`}>
+        <div className="w-12 shrink-0 text-center"><div className="text-[10px] uppercase text-muted-foreground">{WEEKDAY_LABELS[weekday].slice(0,3)}</div><div className="text-lg font-bold">{date.getDate()}</div></div><div className="h-10 w-px bg-border"/><div className="min-w-0 flex-1"><div className="flex items-center gap-2"><span className="text-sm font-bold">{label}</span>{dateStr === todayDate && <span className="rounded-full bg-primary px-2 py-0.5 text-[8px] font-bold text-primary-foreground">TODAY</span>}</div><p className="text-xs text-muted-foreground">{sub}{workout ? ` · ${workout.title}` : ""}</p></div><ChevronRight className="h-4 w-4 text-muted-foreground" />
+      </button>;
     })}</div>
   </AppLayout>;
 }
