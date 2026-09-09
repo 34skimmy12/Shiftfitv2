@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useProfile } from "@/hooks/useProfile";
 import AppLayout from "@/components/AppLayout";
@@ -12,22 +12,26 @@ const INTENSITY_LABEL = { low: "Low", moderate: "Moderate", high: "High" };
 
 export default function Workouts() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { profile, loading } = useProfile();
   const [plans, setPlans] = useState([]);
   const [logs, setLogs] = useState([]);
-  const [openIdx, setOpenIdx] = useState(null);
   const today = todayStr();
   const wdIdx = weekdayOf(today);
+  const requestedDay = Number(searchParams.get("day"));
+  const selectedDay = Number.isInteger(requestedDay) && requestedDay >= 0 && requestedDay <= 6 ? requestedDay : wdIdx;
 
   useEffect(() => {
     if (!profile) return;
     base44.entities.WorkoutPlan.list().then((p) => {
       const sorted = [...p].sort((a, b) => a.day_index - b.day_index);
       setPlans(sorted);
-      setOpenIdx(wdIdx);
+      setOpenIdx(selectedDay);
     });
     base44.entities.WorkoutLog.filter({ date: today }).then(setLogs);
-  }, [profile, today, wdIdx]);
+  }, [profile, today, wdIdx, selectedDay]);
+
+  const [openIdx, setOpenIdx] = useState(null);
 
   if (loading) return <Splash />;
   if (!profile) { navigate("/onboarding"); return null; }
