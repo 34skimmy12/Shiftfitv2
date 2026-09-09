@@ -3,9 +3,9 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = process.env.AI_GATEWAY_API_KEY;
   if (!apiKey) {
-    return res.status(500).json({ error: "OpenAI API key is not configured on the server." });
+    return res.status(500).json({ error: "AI Gateway API key is not configured on the server." });
   }
 
   try {
@@ -34,14 +34,14 @@ Coach rules:
 - When discussing nutrition, work with the user's stated calorie/protein targets and actual meals where available.
 - If important information is missing, ask a focused follow-up question rather than inventing it.`;
 
-    const response = await fetch("https://api.openai.com/v1/responses", {
+    const response = await fetch("https://ai-gateway.vercel.sh/v1/responses", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "gpt-5.6-luna",
+        model: "openai/gpt-5.4-mini",
         instructions,
         input: [
           ...safeHistory,
@@ -53,7 +53,7 @@ Coach rules:
 
     const data = await response.json();
     if (!response.ok) {
-      console.error("OpenAI Coach error", data);
+      console.error("AI Gateway Coach error", data);
       return res.status(502).json({ error: "The AI coach could not respond right now." });
     }
 
