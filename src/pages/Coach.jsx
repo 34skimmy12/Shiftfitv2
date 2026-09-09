@@ -102,8 +102,8 @@ ${coachContext || `USER PROFILE\n${JSON.stringify(profile)}`}`;
         )}
         {messages.map((m) => (
           <div key={m.id} className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}>
-            <div className={cn("max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-sm leading-relaxed", m.role === "user" ? "bg-primary text-primary-foreground" : "bg-card border border-border")}>
-              {m.content}
+            <div className={cn("max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed", m.role === "user" ? "bg-primary text-primary-foreground" : "bg-card border border-border")}>
+              {m.role === "assistant" ? <CoachMessage content={m.content} /> : <span className="whitespace-pre-wrap">{m.content}</span>}
             </div>
           </div>
         ))}
@@ -133,6 +133,39 @@ ${coachContext || `USER PROFILE\n${JSON.stringify(profile)}`}`;
       </div>
     </AppLayout>
   );
+}
+
+function CoachMessage({ content }) {
+  const lines = String(content ?? "").split(/\r?\n/);
+
+  return (
+    <div className="space-y-2">
+      {lines.map((line, index) => {
+        const trimmed = line.trim();
+        if (!trimmed) return <div key={index} className="h-1" />;
+
+        if (/^#{1,3}\s+/.test(trimmed)) {
+          return <p key={index} className="pt-1 font-semibold">{renderInlineMarkdown(trimmed.replace(/^#{1,3}\s+/, ""))}</p>;
+        }
+
+        if (/^[-*]\s+/.test(trimmed)) {
+          return <div key={index} className="flex gap-2 pl-1"><span aria-hidden="true">•</span><span>{renderInlineMarkdown(trimmed.replace(/^[-*]\s+/, ""))}</span></div>;
+        }
+
+        return <p key={index}>{renderInlineMarkdown(trimmed)}</p>;
+      })}
+    </div>
+  );
+}
+
+function renderInlineMarkdown(text) {
+  const parts = String(text).split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, index) => {
+    if (/^\*\*[^*]+\*\*$/.test(part)) {
+      return <strong key={index}>{part.slice(2, -2)}</strong>;
+    }
+    return <React.Fragment key={index}>{part}</React.Fragment>;
+  });
 }
 
 function Splash() {
