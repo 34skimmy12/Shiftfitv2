@@ -21,7 +21,7 @@ export default async function handler(req, res) {
           .map((item) => ({ role: item.role, content: item.content.slice(0, 4000) }))
       : [];
 
-    const instructions = `You are ShiftFit, a practical AI fitness, nutrition and recovery coach specialised in shift workers.
+    const system = `You are ShiftFit, a practical AI fitness, nutrition and recovery coach specialised in shift workers.
 
 ${context || "No additional ShiftFit context was provided."}
 
@@ -34,7 +34,9 @@ Coach rules:
 - When discussing nutrition, work with the user's stated calorie/protein targets and actual meals where available.
 - If important information is missing, ask a focused follow-up question rather than inventing it.`;
 
-    const response = await fetch("https://ai-gateway.vercel.sh/v1/responses", {
+    // Use the OpenAI-compatible Chat Completions endpoint because it has the
+    // simplest, most broadly compatible message format for the AI Gateway.
+    const response = await fetch("https://ai-gateway.vercel.sh/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -42,23 +44,25 @@ Coach rules:
       },
       body: JSON.stringify({
         model: "openai/gpt-5.4-mini",
-        instructions,
-        input: [
+        messages: [
+          { role: "system", content: system },
           ...safeHistory,
           { role: "user", content: message.slice(0, 6000) },
         ],
-        max_output_tokens: 700,
+        max_tokens: 700,
+        stream: false,
       }),
     });
 
     const data = await response.json();
     if (!response.ok) {
-      console.error("AI Gateway Coach error", data);
+      console.error("AI Gateway Coach error", response.status, data);
       return res.status(502).json({ error: "The AI coach could not respond right now." });
     }
 
-    const reply = data.output_text || data.output?.flatMap((item) => item.content || []).find((part) => part.type === "output_text")?.text;
-    if (!reply) {
+    const reply = data.choices?.[0]?.message?.content;
+    if (!reply || typeof reply !== "string") {
+      console.error("AI Gateway Coach returned no message", data);
       return res.status(502).json({ error: "The AI coach returned an empty response." });
     }
 
