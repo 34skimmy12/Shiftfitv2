@@ -44,10 +44,6 @@ export default function Coach() {
   if (loading) return <Splash />;
   if (!profile) { navigate("/onboarding"); return null; }
 
-  const buildContext = () => `You are ShiftFit, an AI fitness & nutrition coach specialised in helping SHIFT WORKERS (day shifts, night shifts, rotating schedules and rest days). Be practical, concise, motivating and specific. Tailor meal timing, caffeine, training and recovery to the user's real shift schedule. Use only the ShiftFit data provided below; never invent missing data.
-
-${coachContext || `USER PROFILE\n${JSON.stringify(profile)}`}`;
-
   const send = async (text) => {
     const content = (text ?? input).trim();
     if (!content || sending) return;
@@ -55,21 +51,35 @@ ${coachContext || `USER PROFILE\n${JSON.stringify(profile)}`}`;
     const userMsg = await base44.entities.ChatMessage.create({ role: "user", content });
     setMessages((m) => [...m, userMsg]);
     setSending(true);
+
     try {
       const history = [...messages, userMsg]
         .slice(-20)
-        .map((m) => `${m.role}: ${m.content}`)
-        .join("\n");
-      const res = await base44.integrations.Core.InvokeLLM({
-        prompt: `${buildContext()}\n\nRecent conversation:\n${history}\n\nUser: ${content}\n\nCoach:`,
+        .map((m) => ({ role: m.role, content: m.content }));
+
+      const response = await fetch("/api/coach", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          context: coachContext || `USER PROFILE\n${JSON.stringify(profile)}`,
+          history,
+          message: content,
+        }),
       });
-      const reply = typeof res === "string" ? res : res?.text || res?.response || JSON.stringify(res);
-      const aiMsg = await base44.entities.ChatMessage.create({ role: "assistant", content: reply });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Coach request failed");
+      if (!data.reply) throw new Error("Coach returned an empty response");
+
+      const aiMsg = await base44.entities.ChatMessage.create({ role: "assistant", content: data.reply });
       setMessages((m) => [...m, aiMsg]);
-    } catch {
-      const aiMsg = await base44.entities.ChatMessage.create({ role: "assistant", content: "I had trouble responding just now — please try again." });
+    } catch (error) {
+      console.error("Coach request failed", error);
+      const aiMsg = await base44.entities.ChatMessage.create({ role: "assistant", content: "I couldn't reach your AI Coach just now. Please try again in a moment." });
       setMessages((m) => [...m, aiMsg]);
-    } finally { setSending(false); }
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
