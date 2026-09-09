@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useProfile } from "@/hooks/useProfile";
+import { getCoachContext, formatCoachContext } from "@/lib/coachContext";
 import AppLayout from "@/components/AppLayout";
 import { Send, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -19,15 +20,34 @@ export default function Coach() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [contextLoading, setContextLoading] = useState(false);
+  const [coachContext, setCoachContext] = useState("");
   const scrollRef = useRef(null);
 
-  useEffect(() => { base44.entities.ChatMessage.list("-created_date", 50).then((m) => setMessages(m.reverse())); }, []);
+  useEffect(() => {
+    base44.entities.ChatMessage.list("-created_date", 50).then((m) => setMessages(m.reverse()));
+  }, []);
+
+  useEffect(() => {
+    if (!profile) return;
+    let cancelled = false;
+    setContextLoading(true);
+    getCoachContext(profile)
+      .then((context) => { if (!cancelled) setCoachContext(formatCoachContext(context)); })
+      .catch(() => { if (!cancelled) setCoachContext(""); })
+      .finally(() => { if (!cancelled) setContextLoading(false); });
+    return () => { cancelled = true; };
+  }, [profile]);
+
   useEffect(() => { scrollRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, sending]);
 
   if (loading) return <Splash />;
   if (!profile) { navigate("/onboarding"); return null; }
 
-  const buildContext = () => `You are ShiftFit, an AI fitness & nutrition coach specialised in helping SHIFT WORKERS. User profile: ${JSON.stringify(profile)}`;
+  const buildContext = () => `You are ShiftFit, an AI fitness & nutrition coach specialised in helping SHIFT WORKERS (day shifts, night shifts, rotating schedules and rest days). Be practical, concise, motivating and specific. Tailor meal timing, caffeine, training and recovery to the user's real shift schedule. Use only the ShiftFit data provided below; never invent missing data.
+
+${coachContext || `USER PROFILE\n${JSON.stringify(profile)}`}`;
+
   const send = async (text) => {
     const content = (text ?? input).trim();
     if (!content || sending) return;
@@ -36,8 +56,13 @@ export default function Coach() {
     setMessages((m) => [...m, userMsg]);
     setSending(true);
     try {
-      const history = messages.map((m) => `${m.role}: ${m.content}`).join("\n");
-      const res = await base44.integrations.Core.InvokeLLM({ prompt: `${buildContext()}\n\nConversation so far:\n${history}\n\nUser: ${content}\n\nCoach:` });
+      const history = [...messages, userMsg]
+        .slice(-20)
+        .map((m) => `${m.role}: ${m.content}`)
+        .join("\n");
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt: `${buildContext()}\n\nRecent conversation:\n${history}\n\nUser: ${content}\n\nCoach:`,
+      });
       const reply = typeof res === "string" ? res : res?.text || res?.response || JSON.stringify(res);
       const aiMsg = await base44.entities.ChatMessage.create({ role: "assistant", content: reply });
       setMessages((m) => [...m, aiMsg]);
@@ -56,14 +81,47 @@ export default function Coach() {
         </div>
       </header>
       <div className="mb-4 space-y-3">
-        {messages.length === 0 && <div className="rounded-2xl border border-border bg-card p-4 text-center"><p className="text-sm text-muted-foreground">Hey {profile.full_name}! Ask me anything…</p></div>}
-        {messages.map((m) => <div key={m.id} className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}><div className={cn("max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-sm leading-relaxed", m.role === "user" ? "bg-primary text-primary-foreground" : "bg-card border border-border")}>{m.content}</div></div>)}
-        {sending && <div className="flex justify-start"><div className="flex items-center gap-1 rounded-2xl border border-border bg-card px-4 py-3"><span className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground"/><span className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground"/><span className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground"/></div></div>}
+        {messages.length === 0 && (
+          <div className="rounded-2xl border border-border bg-card p-4 text-center">
+            <p className="text-sm text-muted-foreground">Hey {profile.full_name}! Ask me anything about training, nutrition or recovery around your shifts.</p>
+            {contextLoading && <p className="mt-2 text-[10px] text-muted-foreground">Loading your ShiftFit plan…</p>}
+          </div>
+        )}
+        {messages.map((m) => (
+          <div key={m.id} className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}>
+            <div className={cn("max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-sm leading-relaxed", m.role === "user" ? "bg-primary text-primary-foreground" : "bg-card border border-border")}>
+              {m.content}
+            </div>
+          </div>
+        ))}
+        {sending && (
+          <div className="flex justify-start">
+            <div className="flex items-center gap-1 rounded-2xl border border-border bg-card px-4 py-3">
+              <span className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground" />
+              <span className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground" />
+              <span className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground" />
+            </div>
+          </div>
+        )}
         <div ref={scrollRef} />
       </div>
-      {messages.length === 0 && <div className="mb-4 flex flex-wrap gap-2">{SUGGESTIONS.map((s) => <button key={s} onClick={() => send(s)} className="no-tap-highlight rounded-full border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground active:bg-secondary">{s}</button>)}</div>}
-      <div className="fixed bottom-20 left-1/2 z-40 w-full max-w-md -translate-x-1/2 px-5"><div className="flex items-center gap-2 rounded-2xl border border-border bg-card p-2"><input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && send()} placeholder="Ask your coach…" className="flex-1 bg-transparent px-2 text-sm outline-none placeholder:text-muted-foreground"/><button onClick={() => send()} disabled={sending || !input.trim()} className="no-tap-highlight flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground disabled:opacity-40"><Send className="h-4 w-4"/></button></div></div>
+      {messages.length === 0 && (
+        <div className="mb-4 flex flex-wrap gap-2">
+          {SUGGESTIONS.map((s) => <button key={s} onClick={() => send(s)} className="no-tap-highlight rounded-full border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground transition-colors active:bg-secondary">{s}</button>)}
+        </div>
+      )}
+      <div className="fixed bottom-20 left-1/2 z-40 w-full max-w-md -translate-x-1/2 px-5">
+        <div className="flex items-center gap-2 rounded-2xl border border-border bg-card p-2">
+          <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && send()} placeholder="Ask your coach…" className="flex-1 bg-transparent px-2 text-sm outline-none placeholder:text-muted-foreground" />
+          <button onClick={() => send()} disabled={sending || !input.trim()} className="no-tap-highlight flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground disabled:opacity-40">
+            <Send className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
     </AppLayout>
   );
 }
-function Splash() { return <div className="flex min-h-screen items-center justify-center bg-background"><div className="h-8 w-8 animate-spin rounded-full border-2 border-secondary border-t-primary" /></div>; }
+
+function Splash() {
+  return <div className="flex min-h-screen items-center justify-center bg-background"><div className="h-8 w-8 animate-spin rounded-full border-2 border-secondary border-t-primary" /></div>;
+}
