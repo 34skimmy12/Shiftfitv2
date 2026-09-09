@@ -79,7 +79,8 @@ ${coachContext || `USER PROFILE\n${JSON.stringify(profile)}`}`;
       setMessages((m) => [...m, aiMsg]);
     } catch (error) {
       console.error("Coach request failed", error);
-      const aiMsg = await base44.entities.ChatMessage.create({ role: "assistant", content: "I had trouble connecting to your AI Coach just now — please try again." });
+      const detail = error?.message || "Unknown error";
+      const aiMsg = await base44.entities.ChatMessage.create({ role: "assistant", content: `AI Coach connection error: ${detail}` });
       setMessages((m) => [...m, aiMsg]);
     } finally { setSending(false); }
   };
