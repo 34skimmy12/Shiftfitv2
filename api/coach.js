@@ -5,7 +5,7 @@ export default async function handler(req, res) {
 
   const apiKey = process.env.AI_GATEWAY_API_KEY;
   if (!apiKey) {
-    return res.status(500).json({ error: "AI Gateway API key is not configured on the server." });
+    return res.status(500).json({ error: "AI Gateway API key is not configured on the server.", code: "MISSING_AI_GATEWAY_KEY" });
   }
 
   try {
@@ -34,8 +34,6 @@ Coach rules:
 - When discussing nutrition, work with the user's stated calorie/protein targets and actual meals where available.
 - If important information is missing, ask a focused follow-up question rather than inventing it.`;
 
-    // Use the OpenAI-compatible Chat Completions endpoint because it has the
-    // simplest, most broadly compatible message format for the AI Gateway.
     const response = await fetch("https://ai-gateway.vercel.sh/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -54,21 +52,27 @@ Coach rules:
       }),
     });
 
-    const data = await response.json();
+    const data = await response.json().catch(() => ({}));
     if (!response.ok) {
-      console.error("AI Gateway Coach error", response.status, data);
-      return res.status(502).json({ error: "The AI coach could not respond right now." });
+      const providerType = data?.error?.type || data?.error?.code || "unknown";
+      console.error("AI Gateway Coach error", response.status, providerType);
+      return res.status(502).json({
+        error: `AI Gateway returned ${response.status} (${providerType}).`,
+        code: "AI_GATEWAY_REQUEST_FAILED",
+        provider_status: response.status,
+        provider_type: providerType,
+      });
     }
 
     const reply = data.choices?.[0]?.message?.content;
     if (!reply || typeof reply !== "string") {
-      console.error("AI Gateway Coach returned no message", data);
-      return res.status(502).json({ error: "The AI coach returned an empty response." });
+      console.error("AI Gateway Coach returned no message");
+      return res.status(502).json({ error: "The AI coach returned an empty response.", code: "EMPTY_AI_RESPONSE" });
     }
 
     return res.status(200).json({ reply });
   } catch (error) {
-    console.error("Coach API error", error);
-    return res.status(500).json({ error: "Unable to reach the AI coach." });
+    console.error("Coach API error", error?.message || error);
+    return res.status(500).json({ error: "Unable to reach the AI coach.", code: "COACH_SERVER_ERROR" });
   }
 }
