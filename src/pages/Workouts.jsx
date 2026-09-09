@@ -5,7 +5,7 @@ import { useProfile } from "@/hooks/useProfile";
 import AppLayout from "@/components/AppLayout";
 import ShiftBadge from "@/components/ShiftBadge";
 import { weekdayOf, shiftForWeekday, WEEKDAY_LABELS, todayStr } from "@/lib/fitnessUtils";
-import { Check, ChevronDown, Clock, Dumbbell } from "lucide-react";
+import { ArrowLeft, Check, ChevronDown, Clock, Dumbbell } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const INTENSITY_LABEL = { low: "Low", moderate: "Moderate", high: "High" };
@@ -59,7 +59,16 @@ export default function Workouts() {
 
   return (
     <AppLayout>
-      <header className="mb-6"><h1 className="text-2xl font-bold tracking-tight">{hasSelectedDay ? `${WEEKDAY_LABELS[selectedDay]} Training` : "Training"}</h1><p className="text-sm text-muted-foreground">{hasSelectedDay ? `Your ${WEEKDAY_LABELS[selectedDay].toLowerCase()} workout` : "Your 7-day plan, adapted to your shifts"}</p></header>
+      <header className="mb-6">
+        {hasSelectedDay && (
+          <button type="button" onClick={() => navigate("/calendar")} className="mb-4 inline-flex items-center gap-2 rounded-xl px-2 py-1 text-sm font-semibold text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground" aria-label="Back to Calendar">
+            <ArrowLeft className="h-4 w-4" />
+            Calendar
+          </button>
+        )}
+        <h1 className="text-2xl font-bold tracking-tight">{hasSelectedDay ? `${WEEKDAY_LABELS[selectedDay]} Training` : "Training"}</h1>
+        <p className="text-sm text-muted-foreground">{hasSelectedDay ? `Your ${WEEKDAY_LABELS[selectedDay].toLowerCase()} workout` : "Your 7-day plan, adapted to your shifts"}</p>
+      </header>
       {!hasSelectedDay && <div className="mb-4 flex items-center gap-2 rounded-2xl border border-border bg-card p-3"><Dumbbell className="h-4 w-4 text-primary" /><span className="text-sm">Today is <b>{WEEKDAY_LABELS[wdIdx]}</b></span><ShiftBadge shift={todaysShift} className="ml-auto" /></div>}
       <div className="space-y-3">{visiblePlans.map((plan) => {
         const isOpen = openIdx === plan.day_index;
