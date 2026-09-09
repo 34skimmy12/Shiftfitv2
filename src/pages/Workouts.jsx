@@ -18,8 +18,10 @@ export default function Workouts() {
   const [logs, setLogs] = useState([]);
   const today = todayStr();
   const wdIdx = weekdayOf(today);
-  const requestedDay = Number(searchParams.get("day"));
-  const selectedDay = Number.isInteger(requestedDay) && requestedDay >= 0 && requestedDay <= 6 ? requestedDay : wdIdx;
+  const rawDay = searchParams.get("day");
+  const requestedDay = Number(rawDay);
+  const hasSelectedDay = rawDay !== null && Number.isInteger(requestedDay) && requestedDay >= 0 && requestedDay <= 6;
+  const selectedDay = hasSelectedDay ? requestedDay : wdIdx;
 
   useEffect(() => {
     if (!profile) return;
@@ -29,13 +31,14 @@ export default function Workouts() {
       setOpenIdx(selectedDay);
     });
     base44.entities.WorkoutLog.filter({ date: today }).then(setLogs);
-  }, [profile, today, wdIdx, selectedDay]);
+  }, [profile, today, selectedDay]);
 
   const [openIdx, setOpenIdx] = useState(null);
 
   if (loading) return <Splash />;
   if (!profile) { navigate("/onboarding"); return null; }
 
+  const visiblePlans = hasSelectedDay ? plans.filter((plan) => plan.day_index === selectedDay) : plans;
   const todaysShift = shiftForWeekday(profile, wdIdx);
   const toggleExercise = async (plan, exName) => {
     const log = logs.find((l) => l.workout_plan_id === plan.id);
@@ -56,9 +59,9 @@ export default function Workouts() {
 
   return (
     <AppLayout>
-      <header className="mb-6"><h1 className="text-2xl font-bold tracking-tight">Training</h1><p className="text-sm text-muted-foreground">Your 7-day plan, adapted to your shifts</p></header>
-      <div className="mb-4 flex items-center gap-2 rounded-2xl border border-border bg-card p-3"><Dumbbell className="h-4 w-4 text-primary" /><span className="text-sm">Today is <b>{WEEKDAY_LABELS[wdIdx]}</b></span><ShiftBadge shift={todaysShift} className="ml-auto" /></div>
-      <div className="space-y-3">{plans.map((plan) => {
+      <header className="mb-6"><h1 className="text-2xl font-bold tracking-tight">{hasSelectedDay ? `${WEEKDAY_LABELS[selectedDay]} Training` : "Training"}</h1><p className="text-sm text-muted-foreground">{hasSelectedDay ? `Your ${WEEKDAY_LABELS[selectedDay].toLowerCase()} workout` : "Your 7-day plan, adapted to your shifts"}</p></header>
+      {!hasSelectedDay && <div className="mb-4 flex items-center gap-2 rounded-2xl border border-border bg-card p-3"><Dumbbell className="h-4 w-4 text-primary" /><span className="text-sm">Today is <b>{WEEKDAY_LABELS[wdIdx]}</b></span><ShiftBadge shift={todaysShift} className="ml-auto" /></div>}
+      <div className="space-y-3">{visiblePlans.map((plan) => {
         const isOpen = openIdx === plan.day_index;
         const log = logs.find((l) => l.workout_plan_id === plan.id);
         const done = log?.completed_exercises || [];
